@@ -1,27 +1,2474 @@
-<!DOCTYPE html><div><div><p>searchGamesById</p><pre>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><title>Query Documentation</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous"/><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script></head><body><div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getScores(userId)</div><div class="mb-2 text-muted card-subtitle h6">country-db.js</div><pre>set @email = <span style="color:red">userId</span>;
+	create temporary table myscorecards
+	select 
+		g.game_id,
+		concat(t0.category,&#x27; &#x27;,t0.gender,&#x27; - &#x27;,t0.sport) as tournament, 
+		date_format(g.date, &#x27;%W, %m/%d&#x27;) as date, 
+		date_format(g.time, &#x27;%h:%i %p&#x27;) as time,
+		g.location,
+		concat(t1.country, &#x27; &#x27;, t1.number) as short1,
+		concat(t2.country,&#x27; &#x27; , t2.number) as short2,
+		t1.country as flag1,
+		t2.country as flag2,
+		concat(s.score1,&#x27; - &#x27;,s.score2) as score, 
+		if(ss.game_id,1,0) as hasSet,
+		concat(ss.team1_set1,&#x27; - &#x27;,ss.team2_set1) as set1,
+		concat(ss.team1_set2,&#x27; - &#x27;,ss.team2_set2) as set2,
+		concat(ss.team1_set3,&#x27; - &#x27;,ss.team2_set3) as set3,
+		t0.sport,
+		g.type,
+		if(current_timestamp &lt; date_add(timestamp(g.date,g.time),interval 3 hour),TRUE,FALSE) as showReport,
+		t0.tournament_id,
+		mytm.team_id
+	from sign as s
+	join game as g on s.game_id = g.game_id
+	join tournament as t0 on g.tournament_id = t0.tournament_id
+	join team as t1 on g.team1_id = t1.team_id 
+	join team as t2 on g.team2_id = t2.team_id
+	join captain as c on t1.country = c.country or t2.country = c.country
+	join team as mytm on (t1.team_id=mytm.team_id or t2.team_id=mytm.team_id) and mytm.country = c.country
+	left join setscore as ss on g.game_id = ss.game_id
+	where c.username = @email
+	order by mytm.team_id asc, g.date desc, g.time desc;
+	create temporary table myscorerows
+	select 
+		distinct msc.team_id, 
+		concat(t.category,&#x27; &#x27;,t.gender) as cc_key, 
+		concat(t.country,&#x27; &#x27;,t.number) as short,
+		concat(t.country,t.number) as shirt,
+		cc.bold,
+		cc.background,
+		cc.text
+	from myscorecards as msc
+	join team as t on msc.team_id = t.team_id
+	join colorchart as cc on concat(t.category,&#x27; &#x27;,t.gender) = cc.category;
+	select * from myscorecards;
+	select * from myscorerows;
+	drop table myscorecards;
+	drop table myscorerows;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getPenaltyEmailInfo(gameId)</div><div class="mb-2 text-muted card-subtitle h6">discipline-db.js</div><pre>select concat(t1.country,&#x27; &#x27;,t1.number) as team1, concat(t2.country,&#x27; &#x27;,t2.number) as team2, g.location, date_format(date,&#x27;%a, %b-%d&#x27;) as date, time_format(CONVERT_TZ(g.time, &#x27;UTC&#x27;, &#x27;America/New_York&#x27;),&#x27;%l:%i %p&#x27; ) as time from game as g
+	join team as t1 on g.team1_id = t1.team_id
+	join team as t2 on g.team2_id = t2.team_id
+	where game_id = <span style="color:red">gameId</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">sendCardPenalty(color, name,gameID, teamID, description, username)</div><div class="mb-2 text-muted card-subtitle h6">discipline-db.js</div><pre>insert into card values(0,<span style="color:red">color</span>,<span style="color:red">name</span>,<span style="color:red">gameID</span>,<span style="color:red">teamID</span>,<span style="color:red">description</span>,<span style="color:red">username</span>,current_timestamp)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getBadCommentsDB()</div><div class="mb-2 text-muted card-subtitle h6">discipline-db.js</div><pre>select distinct
+						bc.comment_id as commentID, 
+    					p.post, 
+						c.comment, 
+						bc.status,
+						badwords as flaggedWords, 
+						concat(u.first_name,&#x27; &#x27;,u.last_name,&#x27;: &#x27;,date_format(c.time_stamp,&#x27;%e-%b @ %l:%i %p&#x27;)) as commentAuthorInfo 
+					from badcomments as bc
+					join comment as c on bc.comment_id = c.comment_id
+					join post as p on c.social_hash_id = p.social_hash_id
+					join user as u on p.poster_username = u.username
+					where status in (&#x27;PENDING&#x27;,&#x27;SUMMONED&#x27;)
+					order by bc.status, c.time_stamp desc;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">updateCommentStatusDB(status, comment_id)</div><div class="mb-2 text-muted card-subtitle h6">discipline-db.js</div><pre>update badcomments
+					set status = <span style="color:red">status</span>
+					where comment_id = <span style="color:red">comment_id</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">summonUser(comment_id, message, adminUsernames)</div><div class="mb-2 text-muted card-subtitle h6">discipline-db.js</div><pre>
+		start transaction;
+		SET@username = (select poster_username from comment where comment_id=<span style="color:red">comment_id</span>);
+		insert into team values(0, &#x27;Internal&#x27;, &#x27;Private Message&#x27;, &#x27;INT&#x27;, &#x27;&#x27;, &#x27;&#x27;);
+		SET@dmteamid = (SELECT LAST_INSERT_ID());
+		insert into subscribe values(@username, @dmteamid);
+		insert into subscribe values
+			${adminSubscribeValues};
+		insert into post values(
+			0, 
+			<span style="color:red">messageTitle</span>,
+			<span style="color:red">message</span>,
+			@dmteamid,
+			&#x27;5daa0c58-655e-42f6-a316-842520624c22&#x27;,
+			current_timestamp,
+			sha1(concat(<span style="color:red">messageTitle</span>, <span style="color:red">message</span>,current_timestamp)),
+			0
+		);
+		select
+			@dmteamid as teamid,
+			concat(first_name, &#x27; &#x27;, last_name) as name
+			from user where username=@username;
+		commit;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCards()</div><div class="mb-2 text-muted card-subtitle h6">discipline-db.js</div><pre>
+		select 
+			r.registrant_id,
+			concat(r.firstname,&#x27; &#x27;,r.lastname) as name, 
+			if(color=1,&#x27;Red&#x27;,&#x27;Yellow&#x27;) as card_color,
+			description,
+			timestamp,
+			summary.red,
+			summary.yellow
+		from card as c
+		join registrants as r using(registrant_id)
+		join (select 
+			registrant_id, 
+			sum(case when c.color = 1 then 1 else 0 end) as Red,
+			sum(case when c.color = 0 then 1 else 0 end) as Yellow
+		from card as c
+		group by registrant_id) as summary using(registrant_id)
+		order by timestamp desc
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">searchGamesById(value)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>select distinct game_id, t0.tournament_id, t0.sport,
+		sp.forfeit_score as forfeit, g.type, status, date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, if(p.pool = &#x27;Pool 0&#x27;, &#x27;&#x27;, p.pool) as pool, time_format(g.time,&#x27;%l:%i %p&#x27;) as time,
+		location, team1_id, team2_id,  t1.country as country1, t1.number as number1,
+		t2.country as country2, t2.number as number2, t1.category,
+		t1.gender from game as g
+		join team as t1 on t1.team_id = g.team1_id
+		join team as t2 on t2.team_id = g.team2_id
+		join tournament as t0 on t0.tournament_id= g.tournament_id
+		left join pool as p on p.team_id=t1.team_id
+		join sport as sp on t0.sport=sp.sport
+		where status = &#x27;PENDING&#x27; and game_id = <span style="color:red">value</span> and p.tournament_id=t0.tournament_id
+        order by g.date asc, g.time asc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">searchGamesByLocation(value)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>select distinct game_id, t0.tournament_id, t0.sport,
+		sp.forfeit_score as forfeit, g.type, status, date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, if(p.pool = &#x27;Pool 0&#x27;, &#x27;&#x27;, p.pool) as pool, time_format(g.time,&#x27;%l:%i %p&#x27;) as time,
+		location, team1_id, team2_id,  t1.country as country1, t1.number as number1,
+		t2.country as country2, t2.number as number2, t1.category,
+		t1.gender from game as g
+		join team as t1 on t1.team_id = g.team1_id
+		join team as t2 on t2.team_id = g.team2_id
+		join tournament as t0 on t0.tournament_id= g.tournament_id
+		left join pool as p on p.team_id=t1.team_id
+		join sport as sp on t0.sport=sp.sport
+		where status = &#x27;PENDING&#x27; and g.location = <span style="color:red">value</span> and p.tournament_id=t0.tournament_id
+		order by g.date asc, g.time asc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">insertScore(body, userId)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>replace into sign (game_id, score1, score2, coach1, coach2, site_director, referee, timestamp) values(<span style="color:red">body.game_id</span>, <span style="color:red">body.team1Score</span>,<span style="color:red">body.team2Score</span>, <span style="color:red">body.coach1</span>, <span style="color:red">body.coach2</span> , <span style="color:red">userId</span>, <span style="color:red">body.referee</span>, now());</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">insertRating(team_id, game_id, team_rating)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>INSERT INTO sportsmanship (game_id, team_id, team_rating) VALUES (<span style="color:red">game_id</span>, <span style="color:red">team_id</span>, <span style="color:red">team_rating</span>);</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">setGameToComplete(gameId)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>update gameoptions
+    join scheduleoptions using(schedule_key) 
+    set status = &#x27;COMPLETED&#x27;
+    where published = 1 and game_id = <span style="color:red">gameId</span>;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">retrieveRating()</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>select t.country, number, avg(team_rating) as rating, count(*) as ratingCount from sportsmanship as sp
+	join team as t on t.team_id = sp.team_id
+	group by country</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMyScores(userId)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>
+	select
+		g.game_id,
+		concat(t0.category,&#x27; &#x27;,t0.gender,&#x27; - &#x27;,t0.sport) as tournament,
+		date_format(g.date, &#x27;%W, %m/%d&#x27;) as date,
+		date_format(g.time, &#x27;%h:%i %p&#x27;) as time,
+		g.location,
+		concat(t1.country, &#x27; &#x27;, t1.number) as short1,
+		concat(t2.country,&#x27; &#x27; , t2.number) as short2,
+		t1.country as flag1,
+		t2.country as flag2,
+		concat(s.score1,&#x27; - &#x27;,s.score2) as score,
+		if(ss.game_id,1,0) as hasSet,
+		concat(ss.team1_set1,&#x27; - &#x27;,ss.team2_set1) as set1,
+		concat(ss.team1_set2,&#x27; - &#x27;,ss.team2_set2) as set2,
+		concat(ss.team1_set3,&#x27; - &#x27;,ss.team2_set3) as set3,
+		t0.sport,
+		g.type,
+		if(current_timestamp &lt;= date_add(s.timestamp,interval 2 hour) and scr.game_id is null and scl.game_id is null,TRUE,FALSE) as showReport,
+		t0.tournament_id,
+		mytm.team_id
+	from sign as s
+	join game as g on s.game_id = g.game_id
+	join tournament as t0 on g.tournament_id = t0.tournament_id
+	join team as t1 on g.team1_id = t1.team_id
+	join team as t2 on g.team2_id = t2.team_id
+	join subscribe as sub on t1.team_id = sub.team_id or t2.team_id = sub.team_id
+	join team as mytm on sub.team_id=mytm.team_id
+	left join setscore as ss on g.game_id = ss.game_id
+	left join scorechangerequest as scr on g.game_id = scr.game_id and scr.username = <span style="color:red">userId</span>
+	left join scorechangelog as scl on g.game_id = scl.game_id
+	where sub.username = <span style="color:red">userId</span>
+	order by g.date desc, g.time desc;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMasterStandingsScores()</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>
+		create temporary table scorecards
+		select 
+			date_format(g.date, &#x27;%W, %m/%d&#x27;) as date, 
+			date_format(g.time, &#x27;%h:%i %p&#x27;) as time,
+			g.location,
+			g.tournament_id,
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tournament,
+			if(st.pool = &#x27;Pool 0&#x27;, &#x27;&#x27;, st.pool) as pool,
+			t.sport,
+			g.type,
+			g.game_id,
+			if(abs(s.score1 - s.score2) &gt; sp.rachmanus_max_pd, 1, 0) as rachmanus_flag,
+			sp.rachmanus_max_pd,
+			concat(t1.country,&#x27; &#x27;,t1.number) as team1,
+			concat(t2.country,&#x27; &#x27;,t2.number) as team2,
+			t1.country as flag1,
+			t2.country as flag2,
+			s.score1,
+			s.score2,
+			if(ss.game_id,1,0) as hasSet,
+			ss.team1_set1,
+			ss.team2_set1,
+			ss.team1_set2,
+			ss.team2_set2,
+			ss.team1_set3,
+			ss.team2_set3,
+			concat(s.coach1, &#x27; - &#x27;, s.coach2) as coaches
+		from sign as s
+		join game as g on s.game_id = g.game_id
+		join tournament as t on g.tournament_id = t.tournament_id
+		join sport as sp on t.sport = sp.sport
+		join team as t1 on g.team1_id = t1.team_id
+		join team as t2 on g.team2_id = t2.team_id
+		join standings as st on g.tournament_id = st.tournament_id and g.team1_id = st.team_id
+		left join setscore as ss on s.game_id = ss.game_id
+		order by g.date desc, g.time desc, g.location;
+		select * from scorecards;
+		drop table scorecards;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMyStandingsScores(userId)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>
+		set @userId = <span style="color:red">userId</span>;
+		create temporary table mytournaments
 		select distinct
+			t.tournament_id,
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tournament
+		from tournament as t
+		join pool as p on t.tournament_id = p.tournament_id
+		join sport as sp on t.sport = sp.sport
+		join subscribe as s on p.team_id = s.team_id
+		where
+			sp.forfeit_score &lt;&gt; 0 and s.username = @userId
+		order by tournament;
+		create temporary table myscorecards
+		select distinct
+			date_format(g.date, &#x27;%W, %m/%d&#x27;) as date,
+			date_format(g.time, &#x27;%h:%i %p&#x27;) as time,
+			g.location,
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tournament,
+			if(st.pool = &#x27;Pool 0&#x27;, &#x27;&#x27;, st.pool) as pool,
+			t.sport,
+			g.type,
+			g.game_id,
+			g.tournament_id,
+			if(abs(s.score1 - s.score2) &gt; sp.rachmanus_max_pd, 1, 0) as rachmanus_flag,
+			sp.rachmanus_max_pd,
+			concat(t1.country,&#x27; &#x27;,t1.number) as team1,
+			concat(t2.country,&#x27; &#x27;,t2.number) as team2,
+			t1.country as flag1,
+			t2.country as flag2,
+			s.score1,
+			s.score2,
+			if(ss.game_id,1,0) as hasSet,
+			ss.team1_set1,
+			ss.team2_set1,
+			ss.team1_set2,
+			ss.team2_set2,
+			ss.team1_set3,
+			ss.team2_set3
+		from sign as s
+		join game as g on s.game_id = g.game_id
+		join tournament as t on g.tournament_id = t.tournament_id
+		join sport as sp on t.sport = sp.sport
+		join team as t1 on g.team1_id = t1.team_id
+		join team as t2 on g.team2_id = t2.team_id
+		left join setscore as ss on s.game_id = ss.game_id
+		join mytournaments as mt on g.tournament_id = mt.tournament_id
+		join standings as st on g.tournament_id = st.tournament_id and g.team1_id = st.team_id
+		order by g.date desc, g.time desc, g.location;
+		select * from myscorecards;
+		drop table mytournaments;
+		drop table myscorecards;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getGameTypeFromGameId(gameId)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>select type from game where game_id = <span style="color:red">gameId</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">postUnassigned(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>insert into game values(0,<span style="color:red">body.tournamentId</span>,&#x27;PENDING&#x27;,<span style="color:red">body.newDate</span>,<span style="color:red">body.newTime</span>,<span style="color:red">body.newLocation</span>,NULL,NULL,<span style="color:red">body.gameType</span>)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">postTournament(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>insert into game values(0,<span style="color:red">body.tournamentId</span>,&#x27;TOURNAMENT&#x27;,<span style="color:red">body.newDate</span>,<span style="color:red">body.newTime</span>,<span style="color:red">body.newLocation</span>,NULL,NULL,<span style="color:red">body.gameType</span>)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamsFromGame(gameid)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>select t1.team_id as team1Id, t2.team_id as team2Id, g.date, g.time, concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tournament, concat(t1.country,&#x27; &#x27;, t1.number) as team1, concat(t2.country,&#x27; &#x27;, t2.number) as team2 from tournament as t
+								join game as g on t.tournament_id = g.tournament_id
+								join team as t1 on g.team1_id = t1.team_id
+								join team as t2 on g.team2_id = t2.team_id
+								where g.game_id = <span style="color:red">gameid</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCategoryFromGameId(gameId)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>select t.category, t.gender, t.sport, concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tournament from game as g
+				join tournament as t on g.tournament_id = t.tournament_id
+				where g.game_id = <span style="color:red">gameId</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">deleteGameBroadcast(body, gameType)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>insert into post
+								select 0,concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),${content},t.team_id,&#x27;0cd6e8a4-a449-4800-a361-d59028c0e23c&#x27;,current_timestamp, sha1(concat(concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),${content},current_timestamp)), 1  from team as t
+								join game as g on g.team1_id = t.team_id
+								where g.game_id = <span style="color:red">body.gameId</span>
+								UNION
+								select 0,concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),${content},t.team_id,&#x27;5daa0c58-655e-42f6-a316-842520624c22&#x27;,CURRENT_TIMESTAMP, sha1(concat(concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),${content},current_timestamp)), 1 from team as t
+								join game as g on g.team2_id = t.team_id
+								where g.game_id = <span style="color:red">body.gameId</span>;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTourneyAndTeamNamesFromGameID(gameId)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>select concat(t0.category,&#x27; &#x27;,t0.gender,&#x27; - &#x27;,t0.sport) as tournament, concat(t1.country,&#x27; &#x27;,t1.number) as team1Name, concat(t2.country,&#x27; &#x27;,t2.number) as team2Name from game as g
+				join team as t1 on g.team1_id = t1.team_id
+				join team as t2 on g.team2_id = t2.team_id
+				join tournament as t0 on g.tournament_id = t0.tournament_id
+				where game_id = <span style="color:red">gameId</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">updateGame(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>update game as g
+								set g.date = <span style="color:red">body.newDate</span>, g.time = <span style="color:red">body.newTime</span>,
+								g.location = <span style="color:red">body.newLocation</span>
+								where game_id = <span style="color:red">body.gameId</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">postGameChange(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>insert into gamechange values (0, <span style="color:red">body.gameId</span>, 
+								<span style="color:red">body.date</span>, <span style="color:red">body.time</span>, <span style="color:red">body.location</span>,
+								<span style="color:red">body.newDate</span>, <span style="color:red">body.newTime</span>, 
+								<span style="color:red">body.newLocation</span>, current_timestamp, <span style="color:red">body.reason</span>, <span style="color:red">body.change_type</span>);</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">removeGame(id)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>update game
+					set status = &#x27;DELETED&#x27;
+					where game_id=<span style="color:red">id</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">preAcceptScoreChange(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>
+		select
+			t.tournament_id,
+			p.pool,
+			t1.team_id as team1_id,
+			t2.team_id as team2_id,
+			concat(
+			&#x27;The score of the &#x27;,
+			t.category, 
+			&#x27; &#x27;,
+			t.gender, 
+			&#x27; &#x27;,
+			t.sport, 
+			&#x27; game between &#x27;,
+			t1.category, 
+			&#x27; &#x27;,
+			t1.gender, 
+			&#x27; &#x27;,
+			t1.country, 
+			t1.number, 
+			&#x27; and &#x27;,
+			t2.category, 
+			&#x27; &#x27;,
+			t2.gender, 
+			&#x27; &#x27;,
+			t2.country, 
+			t2.number, 
+			&#x27; on &#x27;,
+			date_format(g.date, &#x27;%W, %m/%d&#x27;),
+			&#x27; @ &#x27;,
+			date_format(g.time, &#x27;%h:%i %p&#x27;),
+			&#x27; was changed to <span style="color:red">body.score1</span>-<span style="color:red">body.score2</span>&#x27;
+			) as content
+		from game as g
+		join tournament as t on g.tournament_id = t.tournament_id
+		join pool as p on t.tournament_id = p.tournament_id and g.team1_id = p.team_id
+		left join team as t1 on g.team1_id = t1.team_id
+		left join team as t2 on g.team2_id = t2.team_id
+		where game_id = <span style="color:red">body.gameId</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">scoreChangeRequestCheck(game_id, score1, score2)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>select count(*) from scorechangerequest
+					where game_id = <span style="color:red">game_id</span> and score1 = <span style="color:red">score1</span> and score2 = <span style="color:red">score2</span> </pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">newScoreChangeRequest(game_id, score1, score2, username)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre> 
+	INSERT INTO scorechangerequest (game_id, score1, score2, username, status) VALUES (<span style="color:red">game_id</span>, <span style="color:red">score1</span>, <span style="color:red">score2</span>, <span style="color:red">username</span>, &#x27;Pending Decision&#x27;);
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">newScoreChangeRequestVB(game_id, set, username)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre> 
+	INSERT INTO scorechangerequest (game_id, score1, score2, team1_set1, team2_set1, team1_set2, team2_set2, team1_set3, team2_set3, username, status) VALUES (<span style="color:red">game_id</span>, <span style="color:red">set.score1</span>, <span style="color:red">set.score2</span>, <span style="color:red">set.team1_set1</span>, <span style="color:red">set.team2_set1</span>, <span style="color:red">set.team1_set2</span>, <span style="color:red">set.team2_set2</span>, <span style="color:red">set.team1_set3</span>, <span style="color:red">set.team2_set3</span>, <span style="color:red">username</span>, &#x27;Pending Decision&#x27;);
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMasterScores()</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>select date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, time_format(g.time,&#x27;%l:%i %p&#x27;) as time, g.game_id as gameId, concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport,if(g.type = &#x27;Round - 1&#x27;, &#x27;&#x27;, concat(&#x27; &#x27;,g.type))) as tournament, t.sport, g.location, concat(t1.country,&#x27; &#x27;,t1.number) as team1, concat(t2.country,&#x27; &#x27;,t2.number) as team2, s.score1, s.score2, s.coach1, s.coach2, s.referee from sign as s
+								join game as g on s.game_id=g.game_id
+								join team as t1 on g.team1_id=t1.team_id
+								join team as t2 on g.team2_id=t2.team_id
+								join tournament as t on t.tournament_id=g.tournament_id
+								order by g.date desc, g.time desc, g.location asc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getSetScoreByGame(gameid)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>select g.game_id, concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport,if(g.type = &#x27;Round - 1&#x27;, &#x27;&#x27;, concat(&#x27; &#x27;,g.type))) as tournament, concat(t1.country,&#x27; &#x27;,t1.number) as team1, concat(t2.country,&#x27; &#x27;,t2.number) as team2, ss.team1_set1, ss.team2_set1, ss.team1_set2, ss.team2_set2, ss.team1_set3, ss.team2_set3 from setscore as ss
+								join game as g on g.game_id = ss.game_id
+								join tournament as t on t.tournament_id = g.tournament_id
+								join team as t1 on t1.team_id=g.team1_id
+								join team as t2 on t2.team_id=g.team2_id
+								order by tournament, team1, team2
+								where g.game_id = <span style="color:red">game_id</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMasterScoreChanges()</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>
+		select * from (
+			select 
+				s.game_id,
+				date_format(g.date,&#x27;%a, %e-%b&#x27;) as date,
+				time_format(g.time,&#x27;%l:%i %p&#x27;) as time,
+				concat(t1.category,&#x27; &#x27;,t1.gender,&#x27; &#x27;,t1.country,t1.number) as team_1,
+				concat(t2.category,&#x27; &#x27;,t2.gender,&#x27; &#x27;,t2.country,t2.number) as team_2,
+				t.sport,
+				concat(score1,&#x27; - &#x27;,score2) as score, 
+				concat(team1_set1,&#x27; - &#x27;,team2_set1) as set_1, 
+				concat(team1_set2,&#x27; - &#x27;,team2_set2) as set_2, 
+				concat(team1_set3,&#x27; - &#x27;,team2_set3) as set_3, 
+				0 as change_id,
+				current_timestamp() as timestamp,
+				date_format(current_timestamp(),&#x27;%a, %e-%b&#x27;) as change_date,
+				time_format(current_timestamp(),&#x27;%l:%i %p&#x27;) as change_time,
+				&#x27;&#x27; as reason
+			from sign as s
+			left join setscore as ss on s.game_id = ss.game_id
+			join game as g on s.game_id = g.game_id
+			left join team as t1 on g.team1_id = t1.team_id
+			left join team as t2 on g.team2_id = t2.team_id
+			join tournament as t on g.tournament_id = t.tournament_id
+			union
+			select 
+				scl.game_id,
+				date_format(g.date,&#x27;%a, %e-%b&#x27;) as date,
+				time_format(g.time,&#x27;%l:%i %p&#x27;) as time,
+				concat(t1.category,&#x27; &#x27;,t1.gender,&#x27; &#x27;,t1.country,t1.number) as team_1,
+				concat(t2.category,&#x27; &#x27;,t2.gender,&#x27; &#x27;,t2.country,t2.number) as team_2,
+				t.sport,
+				concat(score1,&#x27; - &#x27;,score2) as score, 
+				concat(team1_set1,&#x27; - &#x27;,team2_set1) as set_1, 
+				concat(team1_set2,&#x27; - &#x27;,team2_set2) as set_2, 
+				concat(team1_set3,&#x27; - &#x27;,team2_set3) as set_3, 
+				change_id as change_id,
+				timestamp,
+				date_format(timestamp,&#x27;%a, %e-%b&#x27;) as change_date,
+				time_format(timestamp,&#x27;%l:%i %p&#x27;) as change_time,
+				reason
+			from scorechangelog as scl
+			join game as g on scl.game_id = g.game_id
+			left join team as t1 on g.team1_id = t1.team_id
+			left join team as t2 on g.team2_id = t2.team_id
+			join tournament as t on g.tournament_id = t.tournament_id) as internal
+			where game_id in (select game_id from scorechangelog)
+			order by game_id, timestamp desc
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">insertSetScore3Sets(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>insert into setscore values (<span style="color:red">body.gameId</span>, <span style="color:red">body.team1Set1</span>, <span style="color:red">body.team2Set1</span>, <span style="color:red">body.team1Set2</span>, <span style="color:red">body.team2Set2</span>, <span style="color:red">body.team1Set3</span>, <span style="color:red">body.team2Set3</span>)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">insertSetScore2Sets(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>insert into setscore (game_id, team1_set1, team2_set1, team1_set2, team2_set2) values (<span style="color:red">body.gameId</span>, <span style="color:red">body.team1Set1</span>, <span style="color:red">body.team2Set1</span>, <span style="color:red">body.team1Set2</span>, <span style="color:red">body.team2Set2</span>)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getGameUsersDB(gameId)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>
+	select g.game_id, r.firstname, r.lastname, r.registrant_id, tm.id, tm.name as team from registrants as r
+		join teamnotes as tm on r.team = tm.name
+		join game as g on g.team1_id = tm.id or g.team2_id = tm.id
+		where game_id = <span style="color:red">gameId</span>
+		order by tm.name, firstname, lastname</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMasterScheduleChanges()</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>
+		select * from (
+			select 
+				g.game_id,
+				concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tourny,
+				g.type,
+				concat(t1.category,&#x27; &#x27;,t1.gender,&#x27; &#x27;,t1.country,t1.number) as team1,
+				concat(t2.category,&#x27; &#x27;,t2.gender,&#x27; &#x27;,t2.country,t2.number) as team2,
+				date_format(g.date,&#x27;%a, %e-%b&#x27;) as date,
+				time_format(g.time,&#x27;%l:%i %p&#x27;) as time,
+				g.location,
+				0 as change_id,
+				date_add(current_timestamp(), interval -4 hour) as timestamp,
+				date_format(date_add(current_timestamp(), interval -4 hour),&#x27;%a, %e-%b&#x27;) as change_date,
+				time_format(date_add(current_timestamp(), interval -4 hour),&#x27;%l:%i %p&#x27;) as change_time,
+				&#x27;current&#x27; as change_type,
+				&#x27;&#x27; as reason 
+			from game as g
+			join tournament as t on g.tournament_id = t.tournament_id
+			left join team as t1 on g.team1_id = t1.team_id
+			left join team as t2 on g.team2_id = t2.team_id
+			union
+			select 
+				gcl.game_id,
+				concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tourny,
+				g.type,
+				concat(t1.category,&#x27; &#x27;,t1.gender,&#x27; &#x27;,t1.country,t1.number) as team1,
+				concat(t2.category,&#x27; &#x27;,t2.gender,&#x27; &#x27;,t2.country,t2.number) as team2,
+				date_format(gcl.date,&#x27;%a, %e-%b&#x27;) as date,
+				time_format(gcl.time,&#x27;%l:%i %p&#x27;) as time,
+				gcl.location,
+				change_id as change_id,
+				date_add(timestamp, interval -4 hour) as timestamp,
+				date_format(date_add(timestamp, interval -4 hour),&#x27;%a, %e-%b&#x27;) as change_date,
+				time_format(date_add(timestamp, interval -4 hour),&#x27;%l:%i %p&#x27;) as change_time,
+				gcl.change_type,
+				reason
+			from gameoptionschangelog as gcl
+			join game as g on gcl.game_id = g.game_id
+			join tournament as t on g.tournament_id = t.tournament_id
+			left join team as t1 on g.team1_id = t1.team_id
+			left join team as t2 on g.team2_id = t2.team_id
+			join scheduleoptions as so using(schedule_key) where published = 1
+		) as internal
+		where game_id in (select game_id from gameoptionschangelog 
+							join scheduleoptions using(schedule_key) where published = 1)
+		order by game_id, timestamp desc
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getRefScheduleChanges(userId)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre>
+		select * from (
+			select 
+				g.game_id,
+				concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tourny,
+				g.type,
+				concat(t1.country,t1.number) as team1,
+				concat(t2.country,t2.number) as team2,
+				date_format(g.date,&#x27;%a, %e-%b&#x27;) as date,
+				time_format(g.time,&#x27;%l:%i %p&#x27;) as time,
+				g.location,
+				0 as change_id,
+				date_add(current_timestamp(), interval -4 hour) as timestamp,
+				date_format(date_add(current_timestamp(), interval -4 hour),&#x27;%a, %e-%b&#x27;) as change_date,
+				time_format(date_add(current_timestamp(), interval -4 hour),&#x27;%l:%i %p&#x27;) as change_time,
+				&#x27;&#x27; as reason,
+				t.sport,
+				&#x27;current&#x27; as change_type
+			from game as g
+			join tournament as t on g.tournament_id = t.tournament_id
+			left join team as t1 on g.team1_id = t1.team_id
+			left join team as t2 on g.team2_id = t2.team_id
+
+			union
+			
+			select 
+				gcl.game_id,
+				concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tourny,
+				g.type,
+				concat(t1.country,t1.number) as team1,
+				concat(t2.country,t2.number) as team2,
+				date_format(gcl.date,&#x27;%a, %e-%b&#x27;) as date,
+				time_format(gcl.time,&#x27;%l:%i %p&#x27;) as time,
+				gcl.location,
+				change_id as change_id,
+				date_add(timestamp, interval -4 hour) as timestamp,
+				date_format(date_add(timestamp, interval -4 hour),&#x27;%a, %e-%b&#x27;) as change_date,
+				time_format(date_add(timestamp, interval -4 hour),&#x27;%l:%i %p&#x27;) as change_time,
+				reason,
+				t.sport,
+				gcl.change_type
+			from gameoptionschangelog as gcl
+			join game as g on gcl.game_id = g.game_id
+			join tournament as t on g.tournament_id = t.tournament_id
+			left join team as t1 on g.team1_id = t1.team_id
+			left join team as t2 on g.team2_id = t2.team_id
+			join scheduleoptions as so using(schedule_key) where published = 1
+		) as internal
+		join referee as ref using(sport)
+		where game_id in (select game_id from gameoptionschangelog as gcl join scheduleoptions as so using(schedule_key) where published = 1)
+		and ref.username = <span style="color:red">userId</span>
+		and timestamp &gt; &#x27;2021-11-04&#x27;
+		order by game_id, timestamp desc;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">gameChangeBroadcast(body, gameType)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre> async function gameChangeBroadcast(body, gameType) { //checked 2019-06-05
+	const content = `concat(&quot;The &quot;,<span style="color:red">body.tournament</span>,&quot; ${gameType} &quot;,&quot; previously scheduled for &quot;,date_format(<span style="color:red">body.date</span>,&#x27;%a, %b-%d&#x27;),&quot; at &quot;, time_format(<span style="color:red">body.time</span>,&#x27;%l:%i %p&#x27;), &quot; on &quot;, <span style="color:red">body.location</span>,&quot; was moved to &quot;,date_format(<span style="color:red">body.newDate</span>,&#x27;%a, %b-%d&#x27;), &quot; at &quot;,time_format(<span style="color:red">body.newTime</span>,&#x27;%l:%i %p&#x27;), &quot; on &quot;,<span style="color:red">body.newLocation</span>)`;
+	const query = `insert into post
+								select 0,concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),${content},t.team_id,&#x27;0cd6e8a4-a449-4800-a361-d59028c0e23c&#x27;,current_timestamp, sha1(concat(concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),${content},current_timestamp)), 1  from team as t
+								join game as g on g.team1_id = t.team_id
+								where g.game_id = <span style="color:red">body.gameId</span>
+								UNION
+								select 0,concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),${content},t.team_id,&#x27;0cd6e8a4-a449-4800-a361-d59028c0e23c&#x27;,CURRENT_TIMESTAMP, sha1(concat(concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),${content},current_timestamp)), 1 from team as t
+								join game as g on g.team2_id = t.team_id
+								where g.game_id = <span style="color:red">body.gameId</span>;`;
+
+	return await dbQuery(query);
+}
+
+// @query
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">deleteTournamentBroadcast(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre> async function deleteTournamentBroadcast(body) {
+	const content = `concat(&quot;The &quot;,<span style="color:red">body.tournament</span>,&quot; Tournament previously scheduled for &quot;,date_format(<span style="color:red">body.date</span>,&#x27;%a, %b-%d&#x27;),&quot; at &quot;, time_format(<span style="color:red">body.time</span>,&#x27;%l:%i %p&#x27;), &quot; on &quot;,<span style="color:red">body.location</span>,&quot; has been cancelled&quot;)`;
+
+	const query = `insert into post
+								select 0,concat(t.category,&#x27; &#x27;,t.gender),<span style="color:red">content</span>,t.team_id,&#x27;5daa0c58-655e-42f6-a316-842520624c22&#x27;,current_timestamp, sha1(concat(concat(t.category,&#x27; &#x27;,t.gender),<span style="color:red">content</span>,current_timestamp)), 0
+								from team as t
+								where t.category=<span style="color:red">body.category</span> and t.gender=<span style="color:red">body.gender</span>;`;
+
+	return await dbQuery(query);
+}
+
+// </pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">tournamentChangeBroadcast(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre> async function tournamentChangeBroadcast(body) { //checked 2019-06-05
+	const content = `concat(&quot;The &quot;,<span style="color:red">body.tournament</span>,&quot; Tournament previously scheduled for &quot;,date_format(<span style="color:red">body.date</span>,&#x27;%a, %b-%d&#x27;),&quot; at &quot;, time_format(<span style="color:red">body.time</span>,&#x27;%l:%i %p&#x27;), &quot; on &quot;, <span style="color:red">body.location</span>,&quot; was moved to &quot;,date_format(<span style="color:red">body.newDate</span>,&#x27;%a, %b-%d&#x27;), &quot; at &quot;,time_format(<span style="color:red">body.newTime</span>,&#x27;%l:%i %p&#x27;), &quot; on &quot;,<span style="color:red">body.newLocation</span>)`;
+	const query = `insert into post
+								select 0,concat(t.category,&#x27; &#x27;,t.gender),${content},t.team_id,&#x27;5daa0c58-655e-42f6-a316-842520624c22&#x27;,current_timestamp, sha1(concat(concat(t.category,&#x27; &#x27;,t.gender),${content},current_timestamp)), 0
+								from team as t
+								where t.category=<span style="color:red">body.category</span> and t.gender=<span style="color:red">body.gender</span>;`;
+
+	return await dbQuery(query);
+}
+
+// @query
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">scoreChangeRequests()</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre> async function scoreChangeRequests() {
+	const query = [
+		`select distinct
+			g.game_id, 
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport,if(g.type = &#x27;Round - 1&#x27;, &#x27;&#x27;, concat(&#x27; &#x27;,g.type))) as tournament,
+			date_format(g.date, &#x27;%W, %m/%d&#x27;) as date,
+			date_format(g.time, &#x27;%h:%i %p&#x27;) as time,
+			g.location,
+			concat(t1.country, &#x27; &#x27;, t1.number) as short1,
+			concat(t2.country,&#x27; &#x27; , t2.number) as short2,
+			t1.country as flag1,
+			t2.country as flag2,
+			if(ss.game_id,1,0) as hasSet,
+			s.score1, 
+			s.score2, 
+			ss.team1_set1, 
+			ss.team2_set1, 
+			ss.team1_set2, 
+			ss.team2_set2, 
+			ss.team1_set3, 
+			ss.team2_set3,
+			t.sport,
+			concat(s.coach1, &#x27; - &#x27;, s.coach2) as coaches
+		from scorechangerequest as scr
+		join game as g on scr.game_id = g.game_id
+		join sign as s on g.game_id = s.game_id
+		left join setscore as ss on g.game_id = ss.game_id
+		join team as t1 on g.team1_id = t1.team_id
+		join team as t2 on g.team2_id = t2.team_id
+		join tournament as t on t.tournament_id = g.tournament_id
+		where scr.status = &#x27;Pending Decision&#x27;
+		order by 
+			g.date desc, 
+			g.time desc, 
+			g.location asc;`,
+		`
+		select 
+			game_id as gameId, 
+			score1,
+			score2, 
+			team1_set1,
+			team2_set1,
+			team1_set2,
+			team2_set2,
+			team1_set3,
+			team2_set3,
+			count(*) as count
+		from scorechangerequest as scr
+		where status = &#x27;Pending Decision&#x27;
+		group by 
+			game_id, 
+			score1, 
+			score2, 
+			team1_set1, 
+			team2_set1, 
+			team1_set2, 
+			team2_set2, 
+			team1_set3, 
+			team2_set3;`
+	];
+
+	return await dbQuery(query);
+}
+
+// </pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">rejectScoreChange(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre> async function rejectScoreChange(body) {
+	let team1set1_val = body.team1_set1 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team1_set1</span>`
+	let team2set1_val = body.team2_set1 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team2_set1</span>`
+	let team1set2_val = body.team1_set2 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team1_set2</span>`
+	let team2set2_val = body.team2_set2 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team2_set2</span>`
+	let team1set3_val = body.team1_set3 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team1_set3</span>`
+	let team2set3_val = body.team2_set3 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team2_set3</span>`
+
+	const query = `
+	update scorechangerequest
+	set status = &#x27;Rejected&#x27;
+	where 
+		game_id = <span style="color:red">body.gameId</span> and 
+		score1 = <span style="color:red">body.score1</span> and 
+		score2 = <span style="color:red">body.score2</span> and 
+		team1_set1 ${team1set1_val} and 
+		team2_set1 ${team2set1_val} and 
+		team1_set2 ${team1set2_val} and 
+		team2_set2 ${team2set2_val} and 
+		team1_set3 ${team1set3_val} and 
+		team2_set3 ${team2set3_val}`;
+
+	console.log(query);
+
+	return await dbQuery(query);
+}
+
+// @query
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">acceptScoreChange(body)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre> async function acceptScoreChange(body) {
+	let team1set1_val = body.team1_set1 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team1_set1</span>`;
+	let team2set1_val = body.team2_set1 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team2_set1</span>`;
+	let team1set2_val = body.team1_set2 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team1_set2</span>`;
+	let team2set2_val = body.team2_set2 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team2_set2</span>`;
+	let team1set3_val = body.team1_set3 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team1_set3</span>`;
+	let team2set3_val = body.team2_set3 === null ? &#x27;is null&#x27; : `= <span style="color:red">body.team2_set3</span>`;
+	let setScoreSection = body.team1_set1 === null ? &#x27;&#x27; : `	
+		#Update the setscore table
+		update setscore
+		set
+			team1_set1 = <span style="color:red">body.team1_set1</span>, 
+			team2_set1 = <span style="color:red">body.team2_set1</span>, 
+			team1_set2 = <span style="color:red">body.team1_set2</span>, 
+			team2_set2 = <span style="color:red">body.team2_set2</span>, 
+			team1_set3 = <span style="color:red">body.team1_set3</span>, 
+			team2_set3 = <span style="color:red">body.team2_set3</span>
+		where game_id = <span style="color:red">body.gameId</span>;
+	`;
+
+	const query = `
+		start transaction;
+
+		insert into scorechangelog (
+			change_id, 
+			game_id, 
+			score1, 
+			score2, 
+			team1_set1, 
+			team2_set1, 
+			team1_set2, 
+			team2_set2, 
+			team1_set3, 
+			team2_set3, 
+			timestamp,
+			reason) 
+		select
+			0,
+			s.game_id, 
+			s.score1, 
+			s.score2, 
+			team1_set1, 
+			team2_set1, 
+			team1_set2, 
+			team2_set2, 
+			team1_set3, 
+			team2_set3, 
+			current_timestamp(),
+			<span style="color:red">body.reason</span>
+		from sign as s
+		left join setscore as ss on s.game_id = ss.game_id
+		where s.game_id = <span style="color:red">body.gameId</span>;
+
+		#Change status in scorechangerequest table to accepted
+		update scorechangerequest
+		set status = &#x27;Accepted&#x27;
+		where 
+			game_id = <span style="color:red">body.gameId</span> and 
+			score1 = <span style="color:red">body.score1</span> and 
+			score2 = <span style="color:red">body.score2</span> and 
+			team1_set1 ${team1set1_val} and 
+			team2_set1 ${team2set1_val} and 
+			team1_set2 ${team1set2_val} and 
+			team2_set2 ${team2set2_val} and 
+			team1_set3 ${team1set3_val} and 
+			team2_set3 ${team2set3_val};
+
+		#Reject all score changes for that game
+		update scorechangerequest
+		set status = &#x27;Rejected&#x27;
+		where 
+			game_id = <span style="color:red">body.gameId</span> and
+			status = &#x27;Pending Decision&#x27;;
+
+		#Update the sign table
+		update sign
+		set 
+			score1 = <span style="color:red">body.score1</span>, 
+			score2 = <span style="color:red">body.score2</span>
+		where game_id = <span style="color:red">body.gameId</span>;
+
+		${setScoreSection}
+
+		#Broadcast the score change
+		insert into post
+		(select 
+			0 as post_id,
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number) as title,
+			<span style="color:red">body.content</span> as post,
+			t.team_id as team_id,
+			&#x27;d7f8bbd7-830a-45d7-8102-c2bf1b5a1865&#x27; as poster_username,
+			current_timestamp as time_stamp,
+			SHA1(concat(concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),<span style="color:red">body.content</span>,current_timestamp)) as social_hash_id,
+			1 as comments_allowed 
+		FROM team as t
+		join game as g on g.team1_id=t.team_id
+		where g.game_id = <span style="color:red">body.gameId</span>)
+		UNION
+		(select 
+			0 as post_id,
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number) as title,
+			<span style="color:red">body.content</span> as post,
+			t.team_id as team_id,
+			&#x27;d7f8bbd7-830a-45d7-8102-c2bf1b5a1865&#x27; as poster_username,
+			current_timestamp as time_stamp,
+			SHA1(concat(concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),<span style="color:red">body.content</span>,current_timestamp)) as social_hash_id,
+			1 as comments_allowed 
+		FROM team as t
+		join game as g on g.team2_id=t.team_id
+		where g.game_id = <span style="color:red">body.gameId</span>);
+
+		commit;
+	`;
+
+	console.log(query);
+
+	return await dbQuery(query);
+}
+
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMyScoreChanges(userId, recent)</div><div class="mb-2 text-muted card-subtitle h6">game-db.js</div><pre> async function getMyScoreChanges(userId, recent) {
+	const timestamp_string = recent ? `lv.scores` : `1997-01-01`;
+
+	const query = `
+		select distinct
+			alias.change_id,
+			alias.game_id,
+			alias.type,
+			alias.score1,
+			alias.score2,
+			alias.team1_set1,
+			alias.team2_set1,
+			alias.team1_set2,
+			alias.team2_set2,
+			alias.team1_set3,
+			alias.team2_set3,
+			alias.date,
+			alias.time, 
+			alias.location,
+			alias.catGender,
+			alias.sport,
+			alias.teams,
+			alias.timestamp as timestamp_raw,
+			date_format(alias.timestamp,&#x27;%a, %b-%d @ %l:%i %p&#x27;) as timestamp
+		from (
+			select 
+				sc.change_id,
+				g.game_id,
+				g.type,
+				score1,
+				score2,
+				team1_set1,
+				team2_set1,
+				team1_set2,
+				team2_set2,
+				team1_set3,
+				team2_set3,
+				date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, 
+				date_format(g.time,&#x27;%l:%i %p&#x27;) as time, 
+				g.location,
+				concat(t.category,&#x27; &#x27;,t.gender) as catGender,
+				lower(t.sport) as sport,
+				concat(t1.country,&#x27; &#x27;,t1.number,&#x27; vs. &#x27;,t2.country,&#x27; &#x27;,t2.number) as teams,
+				sc.timestamp
+			from scorechangelog as sc
+			join game as g on g.game_id = sc.game_id
+			join tournament as t on t.tournament_id = g.tournament_id
+			left join team as t1 on g.team1_id = t1.team_id
+			left join team as t2 on g.team2_id = t2.team_id
+
+			union
+
+			select distinct
+				9999 as change_id,
+				g.game_id,
+				g.type,
+				s.score1,
+				s.score2,
+				ss.team1_set1,
+				ss.team2_set1,
+				ss.team1_set2,
+				ss.team2_set2,
+				ss.team1_set3,
+				ss.team2_set3,
+				date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, 
+				date_format(g.time,&#x27;%l:%i %p&#x27;) as time, 
+				g.location,
+				concat(t.category,&#x27; &#x27;,t.gender) as catGender,
+				lower(t.sport) as sport,
+				concat(t1.country,&#x27; &#x27;,t1.number,&#x27; vs. &#x27;,t2.country,&#x27; &#x27;,t2.number) as teams,
+				current_timestamp() as timestamp
+			from sign as s
+			join game as g using(game_id)
+			join scorechangelog as sc using(game_id)
+			join tournament as t on t.tournament_id = g.tournament_id
+			left join team as t1 on g.team1_id = t1.team_id
+			left join team as t2 on g.team2_id = t2.team_id
+			left join setscore as ss using(game_id)) 
+		as alias
+		join game as g using(game_id)
+		left join team as t1 on g.team1_id = t1.team_id
+		left join team as t2 on g.team2_id = t2.team_id
+		left join subscribe as s on s.team_id = t1.team_id or s.team_id = t2.team_id or (t1.team_id is null and g.tournament_id in (select distinct tournament_id 
+																																	from tournament as t
+																																	join game as g using(tournament_id)
+																																	join subscribe as s on g.team1_id = s.team_id or g.team2_id = s.team_id
+																																	where s.username = <span style="color:red">userId</span>))
+		left join coach as co on co.team_id = t1.team_id or co.team_id = t2.team_id or (t1.team_id is null and g.tournament_id in (select distinct tournament_id 
+																																	from tournament as t
+																																	join game as g using(tournament_id)
+																																	join coach as co on g.team1_id = co.team_id or g.team2_id = co.team_id
+																																	where co.username = <span style="color:red">userId</span>))
+																																	left join captain as ca on ca.country = t1.country or ca.country = t2.country or (t1.team_id is null and g.tournament_id in (select distinct tournament_id 
+																																	from tournament as t
+																																	join game as g using(tournament_id)
+																																	join team as t1 on g.team1_id = t1.team_id
+																																	join team as t2 on g.team2_id = t2.team_id
+																																	join captain as ca on t1.country = ca.country or t2.country = ca.country
+																																	where ca.username = <span style="color:red">userId</span>))
+
+		left join lastvisits as lv on lv.username = <span style="color:red">userId</span>
+		where 
+			timestamp &gt; ${timestamp_string} and
+			(s.username = <span style="color:red">userId</span> or 
+			co.username = <span style="color:red">userId</span> or
+			ca.username = <span style="color:red">userId</span>)
+		order by game_id, change_id desc;
+	`;
+	
+	return await dbQuery(query);
+}
+
+// @query
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getFamilyInfo()</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+			select
+				date_format(date_add(f.timestamp,interval -4 hour), &#x27;%m-%d-%y&#x27;) as timestamp,
+				f.mg_fam_id,
+				f.registration_id,
+				f.firstname,
+				f.lastname,
+				f.email,
+				f.phonenumber, 
+				f.is_member,
+				f.member_number,
+				f.has_paid,
+				f.total_cost,
+				concat(r.firstname, &#x27; &#x27;, r.lastname) as registrant_name,
+                r.registrant_id
+			from registrants as r
+			left join families as f
+			on f.registration_id=r.registration_id
+			where r.is_registered = 1
+			ORDER BY f.mg_fam_id ASC
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getRegistrantInfoByID(id)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+	select * from mgdb.registrants where registrant_id = <span style="color:red">id</span>
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getGradeMappings()</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+		select * from grade_mapper	
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getSiteAssignments()</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+		select
+			date_format(sa.date,&#x27;%a, %b-%d&#x27;) as date,
+			date_format(sa.date, &#x27;%Y-%m-%d&#x27;) as date_raw,
+			l.location_name,
+			l.location_id,
+			username,
+			count &gt; 0 as active
+		from siteassignments as sa
+		join location as l
+		on l.location_id = sa.location_id
+		left join (
+			select
+				date,
+				location,
+				count(*) as count
+			from game
+			group by date, location
+			) as c
+		on c.date=sa.date
+		and c.location=l.location_name
+		where l.location_name &lt;&gt; &#x27;Clipboard&#x27;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getSiteAssignmentDates()</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+		select distinct
+			date_format(date,&#x27;%a, %b-%d&#x27;) as date
+		from game
+		where date &lt;&gt; isnull(date)
+		order by date
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getSiteAssignmentLocations()</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+		select distinct
+			location
+		from game
+		where location &lt;&gt; &#x27;Clipboard&#x27;
+		order by location
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">assignSiteDirector(obj)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+		update siteassignments
+		set username=<span style="color:red">obj.username</span>
+		where date=<span style="color:red">obj.date</span>
+		and location_id=<span style="color:red">obj.location</span>
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getRegistrantInfo()</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+				select r.registrant_id,
+				    mg_registrant_id,
+					date_format(date_add(f.timestamp,interval -4 hour), &#x27;%m-%d-%y&#x27;) as timestamp,
+					r.registration_id,
+					r.is_member,
+					r.firstname,
+					r.lastname,
+					r.phonenumber,
+					r.country,
+					date_format(dob,&#x27;%Y-%m-%d&#x27;) as dob,
+					r.gender,
+					r.grade,
+					r.team,
+					r.category_gender,
+					r.shirtsize,
+					r.n_challah,
+					f.email,
+					r.notes,
+					r.is_registered
+				from registrants as r 
+				join families as f using(registration_id);
+
+				select short_name from country where short_name not in (&#x27;ACC&#x27;,&#x27;BIG&#x27;,&#x27;INT&#x27;);
+
+				select concat(category,&#x27; &#x27;,gender) as cat_gen 
+				from catgender 
+				where concat(category,&#x27; &#x27;,gender) not in (&#x27;Opening Ceremony&#x27;, &#x27; &#x27;);
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCaptainRegistrantInfo(username)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+				select r.registrant_id,
+					mg_registrant_id,
+					date_format(date_add(f.timestamp,interval -4 hour), &#x27;%m-%d-%y&#x27;) as timestamp,
+					r.registration_id,
+					r.is_member,
+					r.firstname,
+					r.lastname,
+					r.phonenumber,
+					r.country,
+					date_format(dob,&#x27;%Y-%m-%d&#x27;) as dob,
+					r.gender,
+					r.grade,
+					r.team,
+					r.category_gender,
+					r.shirtsize,
+					r.n_challah,
+					f.email
+				from registrants as r 
+				join families as f using(registration_id)
+				join captain as c using(country)
+				where is_registered = 1 and c.username = &quot;${username}&quot;;
+
+				select distinct(country) as short_name from captain
+					where username = &quot;${username}&quot;;
+					
+				select distinct category_gender as cat_gen from registrants as r
+					join captain as c using(country)
+					where category_gender not in (&#x27;Opening Ceremony&#x27;, &#x27; &#x27;) and username = &quot;${username}&quot;
+					order by category_gender;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getFAQDB()</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>SELECT * FROM faq;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">putFamilyInfo(body, username)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+					update families
+						set firstname = <span style="color:red">body.firstname</span>, 
+						lastname = <span style="color:red">body.lastname</span>, 
+						email = <span style="color:red">body.email</span>, 
+						phonenumber = <span style="color:red">body.phonenumber</span>, 
+						is_member = <span style="color:red">body.is_member</span>, 
+						member_number = <span style="color:red">body.member_number</span>, 
+						has_paid = <span style="color:red">body.has_paid</span>,
+						updated_by = <span style="color:red">username</span>
+						where registration_id = <span style="color:red">body.registration_id</span> ;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">putRegistrantInfo(body, username)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+					update registrants 
+					set is_member = <span style="color:red">body.is_member</span>,
+					firstname = <span style="color:red">body.firstname</span>,
+					lastname = <span style="color:red">body.lastname</span>,
+					phonenumber = <span style="color:red">body.phonenumber</span>,
+					country = <span style="color:red">body.country</span>,
+					dob = <span style="color:red">body.dob</span>,
+					gender = <span style="color:red">body.gender</span>,
+					grade = <span style="color:red">body.grade</span>,
+					category_gender = <span style="color:red">body.category_gender</span>,
+					shirtsize = <span style="color:red">body.shirtsize</span>,
+					n_challah = <span style="color:red">body.n_challah</span>,
+					updated_by = <span style="color:red">username</span>,
+					notes = <span style="color:red">body.notes</span>
+					where registrant_id = <span style="color:red">body.registrant_id</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">putFamilyRegistrantStatus(body, username)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+					update registrants
+						set is_registered= &quot;0&quot;,
+						updated_by = <span style="color:red">username</span>
+						where registration_id = <span style="color:red">body.registration_id</span> ;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">putRegistrantStatus(body, username)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+					update registrants
+						set is_registered= &quot;0&quot;,
+						updated_by = <span style="color:red">username</span>
+						where registrant_id = <span style="color:red">body.registrant_id</span> ;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCurrentAdVetSportInfo(registrantId)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>select displayName, rpName, (other.sport is not null) as registered from advetSportOptions as avso
+	left join (select * from registrants as r
+	join advetsports as avs using(registrant_id)
+	where registrant_id = <span style="color:red">registrantId</span>) as other on avso.rpName = other.sport
+	where rpName &lt;&gt; &#x27;allSports&#x27;
+	order by displayName;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCurrentAddonInfo(registrantId)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre>
+	select a.name, (other.name is not null) as registered from addons as a
+	left join (select addon_id, registrant_id, name from registrants as r
+	join addonregistrations as ar using(registrant_id)
+	join addons as a using(addon_id)
+	where r.registrant_id = <span style="color:red">registrantId</span>) as other on a.name = other.name
+	join registrants as r on r.category_gender = concat(a.category,&#x27; &#x27;,a.gender)
+	where r.registrant_id = <span style="color:red">registrantId</span>
+	ORDER BY name;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">putCurrentAdVetSportInfo(body, registrantId)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre> async function putCurrentAdVetSportInfo(body, registrantId) {
+	try{
+
+		// console.log(&quot;PUT ADVETSPORT: &quot;, body)
+		// await dbQuery(&#x27;SET TRANSACTION ISOLATION LEVEL READ COMMITTED&#x27;);
+        // await dbQuery(&quot;start Transaction&quot;, false, true)
+
+		let query1 = `
+		DELETE FROM advetsports WHERE registrant_id = <span style="color:red">registrantId</span>;
+		`;
+		await dbQuery(query1, false, true)
+
+		query1 = &quot;&quot;
+		for(let i = 0; i &lt; body.length; i++){
+			
+			if (body[i][&quot;registered&quot;] == 1) {
+				// console.log(&quot;Inserting into db registered&quot;, body[i])
+				query1 += `
+					INSERT INTO advetsports (registrant_id,sport) values (<span style="color:red">registrantId</span>,<span style="color:red">body[i][&quot;rpName&quot;]</span>);`;
+				
+			}
+			else {
+				continue
+			}
+			
+		}
+		if (query1 === &quot;&quot;) {
+
+			return &quot;no advet added&quot;;
+		}
+		await dbQuery(query1, false, true);
+		// console.log(&quot;Commiting&quot;, query1)
+		// await dbQuery(&quot;commit&quot;)
+		return &quot;success&quot;;
+	}
+	catch (err) {
+		console.error(`Error occurred while updating advet sport ${err.message}`, err);
+		await dbQuery(&quot;rollback&quot;); //await rollback()
+		return -1
+	
+}
+}
+
+
+
+// </pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">putCurrentAddonInfo(body,registrantId)</div><div class="mb-2 text-muted card-subtitle h6">logistics-db.js</div><pre> async function putCurrentAddonInfo(body,registrantId) {
+	try{
+		// await dbQuery(&#x27;SET TRANSACTION ISOLATION LEVEL READ COMMITTED&#x27;);
+        // await dbQuery(&quot;start Transaction&quot;, false, true)
+
+		console.log(&quot;CALLED: &quot;, body)
+
+		let query1 = `
+		DELETE FROM addonregistrations WHERE registrant_id = <span style="color:red">registrantId</span>;
+		`;
+
+		console.log(&quot;First query: &quot;, query1)
+		await dbQuery(query1, false, true)
+
+
+
+		query1 = &quot;&quot;
+		for(let i = 0; i &lt; body.length; i++){
+			console.log(&quot;For Loop is &quot;, i)
+			if (body[i][&quot;registered&quot;] == 1) {
+				// console.log(&quot;Inserting into db registered&quot;, body[i])
+				query1 += `
+				insert into addonregistrations
+				select distinct <span style="color:red">registrantId</span>, addon_id from addonregistrations as ar
+				right join addons as a using(addon_id)
+				where name = <span style="color:red">body[i][&quot;name&quot;]</span> and concat(category,&#x27; &#x27;,gender) = (select category_gender from registrants where registrant_id = <span style="color:red">registrantId</span>); `;
+				
+			}
+			else {
+				continue
+			}
+			
+		}
+		// query1 += &quot;COMMIT;&quot;
+		if (query1 !== &quot;&quot;) {
+			console.log(&quot;Running/executing query&quot;, query1)
+			await dbQuery(query1, false, true);
+			return &quot;success&quot;;
+		}
+		return &quot;success&quot;;
+	}
+	catch (err) {
+		console.error(`Error occurred while creating/updating session schedule details: ${err.message}`, err);
+		await dbQuery(&quot;rollback&quot;); //await rollback()
+		return &quot;Error, could not update addons&quot;
+	
+}
+}</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getBroadcastDates()</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>
+		select distinct date from game as g
+		left join sign as s using(game_id)
+		where s.score1 is null and status = &#x27;PENDING&#x27; and type &lt;&gt; &#x27;Tournament&#x27;
+		order by date asc
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">makeScheduleChangePost(team_id, team_name, postText)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>
+		insert into post
+		values (0,<span style="color:red">team_name</span>,<span style="color:red">postText</span>,<span style="color:red">team_id</span>,
+		&#x27;0cd6e8a4-a449-4800-a361-d59028c0e23c&#x27;,current_timestamp, sha1(concat(<span style="color:red">team_name</span>,
+		<span style="color:red">postText</span>,current_timestamp)), 1)
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">broadcastCountry(content, country, userId, allowComments)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>insert into post 
+								select 0 as post_id,c.long_name as title,<span style="color:red">content</span> as post,t.team_id, &#x27;${userId}&#x27; as poster_username,current_timestamp as time_stamp, sha1(concat(&#x27;EVERYONE&#x27;,<span style="color:red">content</span>,current_timestamp)) as social_hash_id, ${allowComments} as comments_allowed
+								from team as t
+								join country as c on c.short_name=t.country
+								where c.long_name=<span style="color:red">country</span>
+								order by t.team_id asc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getPotentialTeamsForUnassignedGame(game_id)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>
+		select
+			tm.team_id
+		from game as g
+		join tournament as t using(tournament_id)
+		join team as tm on t.category = tm.category and t.gender = tm.gender
+		where game_id = <span style="color:red">game_id</span>
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">broadcastCategory(message, category, userId, allowComments)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>insert into post
+								select 0,concat(t.category,&#x27; &#x27;,t.gender),<span style="color:red">message</span>,t.team_id,&#x27;${userId}&#x27;,current_timestamp, sha1(concat(concat(t.category,&#x27; &#x27;,t.gender),<span style="color:red">message</span>,current_timestamp)), ${allowComments} as comments_allowed
+								from team as t
+								where concat(t.category,&#x27;-&#x27;,t.gender) = <span style="color:red">category</span>;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">addScheduledPost(userId, datetime, audience, groupName, message, allowComments)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>INSERT INTO scheduledPosts VALUES (0, <span style="color:red">userId</span>, <span style="color:red">datetime</span>, <span style="color:red">audience</span>, <span style="color:red">groupName</span>, <span style="color:red">message</span>, <span style="color:red">allowComments</span>);
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getNewsByUser(userId)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>select distinct p.title, p.post, u.username, u.first_name, u.last_name, poster_username, p.time_stamp, p.comments_allowed, p.social_hash_id, count(l.username) as total_likes, exists(select * from likes as l where l.username = <span style="color:red">userId</span> and l.social_hash_id = p.social_hash_id) as liked from post as p
+								join subscribe as s on s.team_id = p.team_id
+								join user as u on u.username = p.poster_username
+								left join likes as l on l.social_hash_id = p.social_hash_id
+								where s.username = <span style="color:red">userId</span>
+								group by p.post_id
+								order by p.time_stamp desc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCommentsByEmail(userId)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>
+	select distinct c.comment_id, p.social_hash_id, concat(u.first_name,&#x27; &#x27;,u.last_name) as poster, c.time_stamp, c.comment, c.comment_id from post as p
+		join comment as c on c.social_hash_id = p.social_hash_id
+		left join badcomments as bc on c.comment_id = bc.comment_id
+		join user as u on u.username = c.poster_username
+		join subscribe as s on s.team_id = p.team_id
+		where s.username = <span style="color:red">userId</span> and bc.comment_id is null
+		order by c.time_stamp desc;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getDatesPost()</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>select * from scheduleDate</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTimesPost()</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>select * from scheduleTime</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">makeDMChannel()</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>insert into team values(0, &#x27;Internal&#x27;, &#x27;Private Message&#x27;, &#x27;INT&#x27;, &#x27;&#x27;, &#x27;&#x27;)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">addLikesDB(userId, socialHash)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>
+	INSERT INTO likes (social_hash_id, username) VALUES (<span style="color:red">socialHash</span>, <span style="color:red">userId</span>)
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">removeLikesDB(userId, socialHash)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>
+	delete from likes where social_hash_id=<span style="color:red">socialHash</span> and username=<span style="color:red">userId</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">insertCommentDB(userId, socialHash, text)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>
+		insert into comment values (0, <span style="color:red">socialHash</span>,<span style="color:red">text</span>,<span style="color:red">userId</span>, CURRENT_TIMESTAMP);
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">insertBadCommentDB(comment_id, bad_words)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>INSERT INTO badcomments VALUES (<span style="color:red">comment_id</span>, <span style="color:red">bad_words</span>, &quot;PENDING&quot;);
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getNumSubscribers(team_id)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>
+		select count(*) as num_recipients from subscribe where team_id=<span style="color:red">team_id</span>
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getNumSubscribersCountry(country)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>
+		select 
+			count(distinct username) as num_recipients
+		from team as t
+		join subscribe as s on t.team_id = s.team_id
+		join country as c on t.country = c.short_name
+		where c.long_name=<span style="color:red">country</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getNumSubscribersCatGender(cat, gender)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>
+		select 
+			count(distinct username) as num_recipients
+		from team as t
+		join subscribe as s on t.team_id = s.team_id
+		where t.category = <span style="color:red">cat</span> and t.gender = <span style="color:red">gender</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">broadcastTeamGeneric(content, teamid, allowComments, title = null, userId = null, medal = null)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>insert into post 
+			select 0 as post_id, &#x27;${title}&#x27;, ${content} as post,t.team_id,<span style="color:red">userId</span> as poster_username,current_timestamp as time_stamp, sha1(concat(<span style="color:red">title</span>,<span style="color:red">content</span>,current_timestamp)) as social_hash, ${allowComments} as comments_allowed
+			from team as t
+			where t.team_id=<span style="color:red">teamid</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamFromSocialHash(socialHash)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>select * from post
+	where social_hash_id = <span style="color:red">socialHash</span>
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCoachesFromTeams(teams)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre>select username from coach where team_id in (${teamIDs})</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">broadcastTeam(content, teamid, allowComments, title = null, userId = null, medal = null)</div><div class="mb-2 text-muted card-subtitle h6">post-db.js</div><pre> async function broadcastTeam(content, teamid, allowComments, title = null, userId = null, medal = null) { //checked 2019-06-04
+	if (title === null) title = `concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number)`;
+	else if (title === false) title = `concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number)`;
+	else title = `<span style="color:red">title</span>`;
+
+	if (userId === null) userId = &#x27;5daa0c58-655e-42f6-a316-842520624c22&#x27;;
+	// console.log(&quot;Medal in Broadcast&quot;, type(medal));
+	if (medal == 0 || medal == &#x27;0&#x27;) {
+		console.log(&quot;Setting Medal to Silver&quot;)
+		userId = &quot;f98079ce-2839-4924-b813-a1dd94690e07&quot;
+	}
+	if (medal == 1 || medal == &#x27;1&#x27;) {
+		console.log(&quot;Setting Medal to Gold&quot;)
+		userId = &quot;bb8b2756-f7ff-4200-a5e0-b7d7ca879b34&quot;
+	}
+	let query = `insert into post 
+			select 0 as post_id, ${title}, <span style="color:red">content</span> as post,t.team_id,<span style="color:red">userId</span> as poster_username,current_timestamp as time_stamp, sha1(concat(<span style="color:red">title</span>,<span style="color:red">content</span>,current_timestamp)) as social_hash, ${allowComments} as comments_allowed
+			from team as t
+			where t.team_id=<span style="color:red">teamid</span>`;	
+	return await dbQuery(query);
+}
+
+
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getUserScheduleDB(userId)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+
+select * from ((select distinct g.date, g.time as start, c.category, concat(c.category,&#x27; &#x27;,t.sport,&#x27; &#x27;,g.type) as title, concat(t1.country,t1.number,&#x27; vs. &#x27;,t2.country,t2.number,&#x27; | &#x27;,g.location,&#x27; | &#x27;,time_format(g.time, &#x27;%h:%i %p&#x27;)) as subtitle, if(t.sport = &#x27;Dodgeball&#x27;, 24,47) as duration from gameoptions as g
+	join scheduleoptions using(schedule_key)
+    join team as t1 on g.team1_id=t1.team_id
+	join team as t2 on g.team2_id=t2.team_id
+	join tournament as t on t.tournament_id=g.tournament_id
+	join colorchart as c on c.category = concat(t.category,&#x27; &#x27;,t.gender)
+	left join subscribe as s1 on s1.team_id=t1.team_id
+	left join subscribe as s2 on s2.team_id=t2.team_id
+	where (s1.username=<span style="color:red">userId</span> or s2.username=<span style="color:red">userId</span>) and g.status not in (&#x27;DELETED&#x27;,&#x27;HIDDEN&#x27;)  and g.location &lt;&gt; &#x27;Clipboard&#x27; and published = 1)
+	UNION
+	(select 
+		distinct es.date, 
+		es.time as start, 
+		&#x27;SpecialEvent&#x27;, 
+		es.title, 
+		concat(es.location,&#x27; | &#x27;,time_format(es.time, &#x27;%h:%i %p&#x27;)) as subtitle, 
+		es.duration 
+	from eventsetup as es
+	join eventparticipation as ep on es.event_id = ep.event_id
+	join tournament as t on concat(t.category,&#x27; &#x27;,t.gender) = concat(ep.category,&#x27; &#x27;,ep.gender)
+	join team as tm on concat(t.category,&#x27; &#x27;,t.gender) = concat(tm.category,&#x27; &#x27;,tm.gender)
+	join subscribe as s on s.team_id=tm.team_id
+	where s.username=<span style="color:red">userId</span>)
+	UNION
+	(select g.date, g.time as start, concat(t.category,&#x27; &#x27;,t.gender) as category, concat(t.category,&#x27; &#x27;,t.gender,&#x27; &#x27;,t.sport,&#x27; &#x27;,g.type) as title, concat(g.location,&#x27; | &#x27;,time_format(g.time, &#x27;%h:%i %p&#x27;)) as subtitle, 47 as duration from tournament as t
+	join gameoptions as g on t.tournament_id = g.tournament_id
+    join scheduleoptions using(schedule_key)
+	where published = 1 and concat(t.category,&#x27; &#x27;,t.gender) in
+	(select distinct concat(t.category,&#x27; &#x27;,t.gender) as catgenkey from subscribe as s
+	join team as t on s.team_id = t.team_id
+	where s.username = <span style="color:red">userId</span>)
+	and g.team1_id is NULL and g.status not in (&#x27;DELETED&#x27;,&#x27;HIDDEN&#x27;) and g.location &lt;&gt; &#x27;Clipboard&#x27;
+	group by g.date, g.time, concat(t.category,&#x27; &#x27;,t.gender))
+	order by date, start) a
+	LEFT JOIN 
+	(select category, background as color, text as textColor from colorchart) b
+	on a.category = b.category</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getDoubleBooked()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		select 
+			date_format(g.date, &#x27;%W, %m/%d&#x27;) as displaydate,
+			g.date,
+			g.time,
+			date_format(g.time, &#x27;%h:%i %p&#x27;) as displaytime,
+			t.team_id, 
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; &#x27;,t.country,t.number) as team, 
+			group_concat(g.game_id order by g.game_id) as game_ids,
+			count(*) as count
+		from game as g
+		join team as t on g.team1_id = t.team_id or g.team2_id = t.team_id
+		where g.status &lt;&gt; &#x27;DELETED&#x27;
+		group by g.date, g.time, t.team_id
+		having count &gt; 1;
+
+		select 
+			date_format(g.date, &#x27;%W, %m/%d&#x27;) as displaydate,
+			g.date,
+			g.time,
+			date_format(g.time, &#x27;%h:%i %p&#x27;) as displaytime,
+			g.location,
+			l.location_id,
+			lower(t.sport) as sport,
+			concat(t1.category,&#x27; &#x27;,t1.gender,&#x27; &#x27;,t1.country,&#x27; &#x27;,t1.number) as team1,
+			concat(t2.category,&#x27; &#x27;,t2.gender,&#x27; &#x27;,t2.country,&#x27; &#x27;,t2.number) as team2,
+			cc.background,
+			cc.text,
+			cc.bold,
+			g.game_id
+		from game as g
+		join tournament as t on g.tournament_id = t.tournament_id
+		left join team as t1 on g.team1_id = t1.team_id
+		left join team as t2 on g.team2_id = t2.team_id
+		join colorchart as cc on concat(t.category,&#x27; &#x27;,t.gender) = cc.category
+		join location as l on t.sport=l.sport and g.location=l.location_name
+		join (select date, time, location, count(*) as count from game
+		where status &lt;&gt; &#x27;DELETED&#x27; and location &lt;&gt; &#x27;Tennis Courts&#x27;
+		group by date, time, location
+		having count &gt; 1) as d using(date,time,location);
+
+		select * from dismissed_double_booked_locations;
+
+		select * from dismissed_double_booked_teams;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">updateDoubleBookedLocations(info, gameIDs, username)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		insert into dismissed_double_booked_locations values ( 
+			<span style="color:red">info.date</span>,
+			<span style="color:red">info.time</span>,
+			<span style="color:red">info.title</span>,
+			<span style="color:red">gameIDs</span>, 
+			<span style="color:red">username</span> 
+		)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">updateDoubleBookedTeams(info, gameIDs, username)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		insert into dismissed_double_booked_teams values (
+			<span style="color:red">info.date</span>,
+			<span style="color:red">info.time</span>,
+			<span style="color:red">info.team_id</span>,
+			<span style="color:red">gameIDs</span>,
+			<span style="color:red">username</span>
+		)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getScheduleDates()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		select distinct date_format(date,&#x27;%a, %b-%d&#x27;) as date, date as rawDate from datetime order by datetime.date
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">masterSchedule()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		select g.game_id, date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, t.tournament_id as tournament_id, g.time, c.category, c.background, c.text as textcolor, c.bold, t.sport, g.location, if(g.team1_id is not NULL, concat(if(g.type &lt;&gt; &#x27;Round - 1&#x27;, concat(left(g.type,1),&#x27;: &#x27;) ,&#x27;&#x27;),t1.country,t1.number,&#x27; vs. &#x27;,t2.country,t2.number,&#x27; &#x27;,g.game_id), concat(left(g.type,1),&#x27;: &#x27;,t.sport,&#x27; &#x27;,g.game_id)) as text, if(g.status in (&#x27;PENDING&#x27;,&#x27;HIDDEN&#x27;), 0, if(g.status = &#x27;Tournament&#x27; and concat(g.date,&#x27; &#x27;,g.time) &gt;= CONVERT_TZ( NOW(),&#x27;GMT&#x27;, &#x27;US/Eastern&#x27;), 0, 1)) as strike from game as g
+		left join team as t1 on g.team1_id=t1.team_id
+		left join team as t2 on g.team2_id=t2.team_id
+		join tournament as t on t.tournament_id=g.tournament_id
+		join colorchart as c on c.category = concat(t.category,&#x27; &#x27;,t.gender)
+		where status &lt;&gt; &#x27;DELETED&#x27; and location &lt;&gt; &#x27;Clipboard&#x27;
+		order by g.date, time
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">times()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>select distinct time from datetime order by time</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">activeSchedule(userId)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		select 
+			g.game_id, 
+			date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, 
+			t.tournament_id as tournament_id, 
+			g.time, 
+			c.category, 
+			c.background, 
+			c.text as textcolor,
+			c.bold, 
+			t.sport, 
+			g.location, 
+			if(g.team1_id is not NULL, 
+			concat(if(g.type &lt;&gt; &#x27;Round - 1&#x27;, concat(left(g.type,1),&#x27;: &#x27;) ,&#x27;&#x27;),t1.country,t1.number,&#x27; vs. &#x27;,t2.country,t2.number,&#x27; &#x27;,g.game_id), concat(left(g.type,1),&#x27;: &#x27;,t.sport,&#x27; &#x27;,g.game_id)) as text, if(g.status in (&#x27;PENDING&#x27;,&#x27;HIDDEN&#x27;), 0, if(g.status = &#x27;Tournament&#x27; and concat(g.date,&#x27; &#x27;,g.time) &gt;= CONVERT_TZ( NOW(),&#x27;GMT&#x27;, &#x27;US/Eastern&#x27;), 0, 1)) as strike 
+		from gameoptions as g
+		join defaultschedule as def on def.schedule_key = g.schedule_key
+		left join teamoptions as t1 on g.team1_id=t1.team_id and def.schedule_key = t1.schedule_key
+		left join teamoptions as t2 on g.team2_id=t2.team_id and def.schedule_key = t2.schedule_key
+		join tournamentoptions as t on t.tournament_id=g.tournament_id and def.schedule_key = t.schedule_key
+		join colorchart as c on c.category = concat(t.category,&#x27; &#x27;,t.gender)
+		where 
+			status &lt;&gt; &#x27;DELETED&#x27;  and location &lt;&gt; &#x27;Clipboard&#x27; and def.username = <span style="color:red">userId</span>
+		order by g.date asc;
+    </pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">allSchedules()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		select 
+			t.schedule_key,
+			g.game_id, 
+			date_format(g.date,&#x27;%a, %b-%d&#x27;) as formatdate,
+			g.date as rawdate, 
+			t.tournament_id as tournament_id, 
+			g.time, 
+			c.category, 
+			c.background, 
+			c.text as textcolor, 
+			c.bold, 
+			t.sport, 
+			g.location, 
+			if(g.team1_id is not NULL, 
+			concat(if(g.type &lt;&gt; &#x27;Round - 1&#x27;, concat(left(g.type,1),&#x27;: &#x27;) ,&#x27;&#x27;),t1.country,t1.number,&#x27; vs. &#x27;,t2.country,t2.number,&#x27; &#x27;,g.game_id), concat(left(g.type,1),&#x27;: &#x27;,t.sport,&#x27; &#x27;,g.game_id)) as text, if(g.status in (&#x27;PENDING&#x27;,&#x27;HIDDEN&#x27;), 0, if(g.status = &#x27;Tournament&#x27; and concat(g.date,&#x27; &#x27;,g.time) &gt;= CONVERT_TZ( NOW(),&#x27;GMT&#x27;, &#x27;US/Eastern&#x27;), 0, 1)) as strike,
+			t1.team_id as team1_id,
+			t2.team_id as team2_id
+		from gameoptions as g
+		left join teamoptions as t1 on g.team1_id=t1.team_id and t1.schedule_key = g.schedule_key
+		left join teamoptions as t2 on g.team2_id=t2.team_id and t2.schedule_key = g.schedule_key
+		join tournamentoptions as t on t.tournament_id=g.tournament_id and t.schedule_key = g.schedule_key
+		join colorchart as c on c.category = concat(t.category,&#x27; &#x27;,t.gender)
+		where 
+			status &lt;&gt; &#x27;DELETED&#x27;
+		order by g.date asc
+    </pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">updateDefaultSchedule(username, version)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>	
+		replace into defaultschedule
+		set 
+			username = <span style="color:red">username</span>, 
+			schedule_key = <span style="color:red">version</span>;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">publishSchedule(username)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		update scheduleoptions
+		set published = 0 where true;
+		
+		update scheduleoptions
+		set published = 1 where schedule_key = (select schedule_key
+					from defaultschedule
+					where username=<span style="color:red">username</span>);
+		
+		delete from tournament where true;
+		insert into tournament
+		select 
+			tournament_id, 
+			category, 
+			gender, 
+			sport, 
+			qual_number 
+		from tournamentoptions
+		where schedule_key = (select schedule_key
+					from defaultschedule
+					where username=<span style="color:red">username</span>);
+		
+		delete from team 
+		where team_id &gt;= 20;
+		insert into team
+		select 
+			team_id,
+			category,
+			gender,
+			country,
+			number,
+			notes
+		from teamoptions
+		where schedule_key = (select schedule_key
+					from defaultschedule
+					where username=<span style="color:red">username</span>);
+		
+		delete from pool where true;
+		insert into pool
+		select 
+			tournament_id,
+			team_id,
+			pool
+		from pooloptions
+		where schedule_key = (select schedule_key
+					from defaultschedule
+					where username=<span style="color:red">username</span>);
+		
+		delete from game where true;
+		insert into game
+		select 
 			game_id,
-			t0.tournament_id,
+			tournament_id,
+			status,
+			date,
+			time,
+			location,
+			team1_id,
+			team2_id,
+			type
+		from gameoptions
+		where schedule_key = (select schedule_key
+					from defaultschedule
+					where username=<span style="color:red">username</span>);
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">unpublishSchedule(username)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+	update scheduleoptions
+	set published = 0 where true;
+	
+	delete from tournament where true;
+	
+	delete from team where team_id &gt;= 20;
+
+	delete from pool where true;
+	
+	delete from game where true;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getScheduleVersions()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>select so.* from scheduleoptions as so
+						join gameoptions as go using(schedule_key)
+						group by schedule_key
+						order by schedule_key desc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getDefaultSchedule(username)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		select 
+			ds.schedule_key,
+			so.published
+		from defaultschedule as ds
+		join scheduleoptions as so
+		using (schedule_key)
+		where username=<span style="color:red">username</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getAllLocations()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		select
+			location_name as location,
+			sport
+		from location
+		where location_name &lt;&gt; &quot;-&quot;
+		</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">createGame(game)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>insert into gameoptions values(
+		<span style="color:red">game.schedule_key</span>,
+		0,
+		<span style="color:red">game.tournament_id</span>,
+		&#x27;PENDING&#x27;,
+		<span style="color:red">game.date</span>,
+		<span style="color:red">game.time</span>,
+		<span style="color:red">game.location</span>,
+		<span style="color:red">game.team1_id</span>,
+		<span style="color:red">game.team2_id</span>,
+		<span style="color:red">game.gameType</span>
+		)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">deleteGame(gameID, schedule_key)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		update gameoptions
+		set status = &#x27;DELETED&#x27;
+		where schedule_key=<span style="color:red">schedule_key</span> and game_id=<span style="color:red">gameID</span>
+		</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">moveGame(game)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		update gameoptions as g
+		set g.date = <span style="color:red">game.date</span>, g.time = <span style="color:red">game.time</span>,
+		g.location = <span style="color:red">game.location</span>
+		where schedule_key=<span style="color:red">game.schedule_key</span> and game_id=<span style="color:red">game.gameId</span>
+		</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">addToGameChangeLog(obj)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		insert into gameoptionschangelog 
+			(schedule_key,
+			change_id,
+			game_id,
+			date,
+			time,
+			location,
+			timestamp,
+			reason,
+			change_type,
+			username) 
+		values (
+			<span style="color:red">obj.schedule_key</span>,
+			0,
+			<span style="color:red">obj.game_id</span>,
+			<span style="color:red">obj.date</span>,
+			<span style="color:red">obj.time</span>,
+			<span style="color:red">obj.location</span>,
+			current_timestamp(),
+			<span style="color:red">obj.reason</span>,
+			<span style="color:red">obj.change_type</span>,
+			<span style="color:red">obj.username</span>);
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getDaySchedule(date)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+    select g.game_id, g.date, g.time, c.category, c.background, c.text as textcolor, c.bold, t.sport, g.location, concat(t1.country,t1.number,&#x27; vs. &#x27;,t2.country,t2.number,&#x27; &#x27;,g.game_id) as text, t1.country as country1, t2.country as country2 from game as g
+    join team as t1 on g.team1_id = t1.team_id
+    join team as t2 on g.team2_id = t2.team_id
+    join tournament as t on g.tournament_id = t.tournament_id
+    join colorchart as c on c.category = concat(t.category,&#x27; &#x27;,t.gender)
+	where date = <span style="color:red">date</span> and g.status not in (&#x27;DELETED&#x27;,&#x27;HIDDEN&#x27;)  and location &lt;&gt; &#x27;Clipboard&#x27;
+	
+    order by date, time, g.location
+    </pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">refScheduleDB(userId)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		select 
+			sport,
+			date_format(date, &#x27;%a, %b-%d&#x27;) as date,
+			time_format(time, &#x27;%l:%i %p&#x27;) as time,
+			location,
+			type,
+			concat(t.category,&#x27; &#x27;,t.gender) as cat_gender,
+			concat(t1.country,t1.number,&#x27; vs. &#x27;,t2.country,t2.number) as teams
+		from game as g
+		join tournament as t using(tournament_id)
+		join referee as ref using(sport)
+		left join team as t1 on g.team1_id = t1.team_id
+		left join team as t2 on g.team2_id = t2.team_id
+		where status &lt;&gt; &#x27;DELETED&#x27;
+		and location &lt;&gt; &#x27;Clipboard&#x27;
+		and username = <span style="color:red">userId</span>
+		order by g.date, g.time, sport, location
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getallScheduleChangesStaffSiteDirectors()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>select distinct date_format(gc.timestamp,&#x27;%a, %b-%d&#x27;) as change_made, gc.change_id, g.game_id, concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport,if(g.type &lt;&gt; &#x27;Round - 1&#x27;,concat(&#x27; &#x27;,g.type),&#x27;&#x27;)) as tournament, concat(t1.country,&#x27; &#x27;,t1.number,&#x27; vs. &#x27;,t2.country,&#x27; &#x27;,t2.number) as teams, if(gc.old_date = &#x27;0000-00-00&#x27;,&#x27;-&#x27;,date_format(gc.old_date,&#x27;%a, %b-%d&#x27;)) as old_date, if(gc.old_time = &#x27;00:00:00&#x27;,&#x27;-&#x27;,date_format(gc.old_time,&#x27;%l:%i %p&#x27;)) as old_time, gc.old_location, if(gc.new_date = &#x27;0000-00-00&#x27;,&#x27;-&#x27;,date_format(gc.new_date,&#x27;%a, %b-%d&#x27;)) as new_date, if(gc.new_time= &#x27;00:00:00&#x27;,&#x27;-&#x27;,date_format(gc.new_time,&#x27;%l:%i %p&#x27;)) as new_time, gc.new_location, gc.change_type from gamechange as gc
+					join game as g on g.game_id=gc.game_id
+					join tournament as t on t.tournament_id=g.tournament_id
+					join team as t1 on g.team1_id=t1.team_id
+					join team as t2 on g.team2_id=t2.team_id
+										
+					UNION
+										
+					select date_format(gc.timestamp,&#x27;%a, %b-%d&#x27;) as change_made, gc.change_id, g.game_id, concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport,if(g.type &lt;&gt; &#x27;Round - 1&#x27;,concat(&#x27; &#x27;,g.type),&#x27;&#x27;)) as tournament, &#x27;TBD&#x27; as teams, if(gc.old_date = &#x27;0000-00-00&#x27;,&#x27;-&#x27;,date_format(gc.old_date,&#x27;%a, %b-%d&#x27;)) as old_date, if(gc.old_time = &#x27;00:00:00&#x27;,&#x27;-&#x27;,date_format(gc.old_time,&#x27;%l:%i %p&#x27;)) as old_time, gc.old_location, if(gc.new_date = &#x27;0000-00-00&#x27;,&#x27;-&#x27;,date_format(gc.new_date,&#x27;%a, %b-%d&#x27;)) as new_date, if(gc.new_time= &#x27;00:00:00&#x27;,&#x27;-&#x27;,date_format(gc.new_time,&#x27;%l:%i %p&#x27;)) as new_time, gc.new_location, gc.change_type from gamechange as gc
+					join game as g on gc.game_id = g.game_id
+					join tournament as t on g.tournament_id = t.tournament_id
+					where g.team1_id is null
+										
+					order by change_id desc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getallScheduleChangesAdmin()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>select distinct date_format(gc.timestamp,&#x27;%a, %b-%d&#x27;) as change_made, gc.change_id, g.game_id, concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport,if(g.type &lt;&gt; &#x27;Round - 1&#x27;,concat(&#x27; &#x27;,g.type),&#x27;&#x27;)) as tournament, concat(t1.country,&#x27; &#x27;,t1.number,&#x27; vs. &#x27;,t2.country,&#x27; &#x27;,t2.number) as teams, if(gc.old_date = &#x27;0000-00-00&#x27;,&#x27;-&#x27;,date_format(gc.old_date,&#x27;%a, %b-%d&#x27;)) as old_date, if(gc.old_time = &#x27;00:00:00&#x27;,&#x27;-&#x27;,date_format(gc.old_time,&#x27;%l:%i %p&#x27;)) as old_time, gc.old_location, if(gc.new_date = &#x27;0000-00-00&#x27;,&#x27;-&#x27;,date_format(gc.new_date,&#x27;%a, %b-%d&#x27;)) as new_date, if(gc.new_time= &#x27;00:00:00&#x27;,&#x27;-&#x27;,date_format(gc.new_time,&#x27;%l:%i %p&#x27;)) as new_time, gc.new_location, gc.change_type, gc.reason from gamechange as gc
+					join game as g on g.game_id=gc.game_id
+					join tournament as t on t.tournament_id=g.tournament_id
+					join team as t1 on g.team1_id=t1.team_id
+					join team as t2 on g.team2_id=t2.team_id
+										
+					UNION
+										
+					select date_format(gc.timestamp,&#x27;%a, %b-%d&#x27;) as change_made, gc.change_id, g.game_id, concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport,if(g.type &lt;&gt; &#x27;Round - 1&#x27;,concat(&#x27; &#x27;,g.type),&#x27;&#x27;)) as tournament, &#x27;TBD&#x27; as teams, if(gc.old_date = &#x27;0000-00-00&#x27;,&#x27;-&#x27;,date_format(gc.old_date,&#x27;%a, %b-%d&#x27;)) as old_date, if(gc.old_time = &#x27;00:00:00&#x27;,&#x27;-&#x27;,date_format(gc.old_time,&#x27;%l:%i %p&#x27;)) as old_time, gc.old_location, if(gc.new_date = &#x27;0000-00-00&#x27;,&#x27;-&#x27;,date_format(gc.new_date,&#x27;%a, %b-%d&#x27;)) as new_date, if(gc.new_time= &#x27;00:00:00&#x27;,&#x27;-&#x27;,date_format(gc.new_time,&#x27;%l:%i %p&#x27;)) as new_time, gc.new_location, gc.change_type, gc.reason from gamechange as gc
+					join game as g on gc.game_id = g.game_id
+					join tournament as t on g.tournament_id = t.tournament_id
+					where g.team1_id is null
+										
+					order by change_id desc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">teamSchedule(version, table)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+	SELECT team_id, CONCAT(category, &#x27; &#x27;, gender, (CASE country WHEN &#x27;&#x27; THEN &#x27;&#x27; ELSE &#x27; &#x27; END), country, number) as title FROM teamoptions WHERE category != &#x27;Internal&#x27; and schedule_key = <span style="color:red">version</span> order by title;
+	
+	select * from (
+	select 
+		g.schedule_key as scheduleVersion, 
+		t.team_id,
+		g.game_id, 
+		date_add(TIMESTAMP(g.date, g.time), interval 5 hour) as start, 
+		date_add(TIMESTAMP(TIMESTAMP(g.date, g.time), &#x27;00:50:00&#x27;), interval 5 hour) as end, 
+		g.location, concat(t0.sport,if(g.type &lt;&gt; &#x27;Round - 1&#x27;,concat(&#x27; &#x27;,g.type),&#x27;&#x27;),&#x27; in &#x27;,g.location,&#x27; (&#x27;,t1.country,t1.number,&#x27;-&#x27;,t2.country,t2.number,&#x27;)&#x27;) as text,
+		&#x27;normal&#x27; as type, 
+		cc.background, 
+		cc.text as textColor, 
+		cc.bold
+	from ${table ? &#x27;gameoptions&#x27; : &#x27;pregameoptions&#x27;} as g
+	join teamoptions as t on (g.team1_id = t.team_id or g.team2_id = t.team_id) and t.schedule_key = g.schedule_key
+	join teamoptions as t1 on g.team1_id = t1.team_id and t1.schedule_key = g.schedule_key
+	join teamoptions as t2 on g.team2_id = t2.team_id and t2.schedule_key = g.schedule_key
+	join colorchart as cc on cc.category = concat(t.category,&#x27; &#x27;, t.gender)
+	join tournamentoptions as t0 on g.tournament_id=t0.tournament_id and t0.schedule_key = g.schedule_key
+	where team1_id is not null and g.status &lt;&gt; &#x27;DELETED&#x27; and g.schedule_key = <span style="color:red">version</span>
+	UNION
+	select
+		g.schedule_key as scheduleVersion,
+		tm.team_id,
+		g.game_id,
+		date_add(TIMESTAMP(g.date, g.time), interval 5 hour) as start,
+		date_add(TIMESTAMP(TIMESTAMP(g.date, g.time), &#x27;00:50:00&#x27;), interval 5 hour) as end,
+		g.location,
+		concat(t0.sport,&#x27; &#x27;,g.type,&#x27; in &#x27;,g.location) as text,
+		&#x27;normal&#x27; as type,
+		cc.background as background,
+		cc.text as textColor,
+		cc.bold as bold
+	from ${table ? &#x27;gameoptions&#x27; : &#x27;pregameoptions&#x27;} as g
+	join tournamentoptions as t0 using(tournament_id, schedule_key)
+	join teamoptions as tm using(category,gender,schedule_key)
+	join colorchart as cc on cc.category = concat(tm.category,&#x27; &#x27;,tm.gender)
+	where team1_id is null and g.status &lt;&gt; &#x27;DELETED&#x27; and g.location &lt;&gt; &#x27;Clipboard&#x27; and g.schedule_key = <span style="color:red">version</span>
+	group by date, start, cc.category, tm.team_id
+	UNION
+	select 
+		<span style="color:red">version</span>, 
+		t.team_id, 
+		es.event_id, 
+		date_add(TIMESTAMP(es.date, es.time), interval 5 hour) as start, 
+		date_add(TIMESTAMP(TIMESTAMP(es.date, es.time), &#x27;00:50:00&#x27;), interval 5 hour) as end, 
+		es.location, concat(es.title,&#x27; @ &#x27;,es.location) as text, 
+		&#x27;special&#x27; as type,
+		&#x27;#FFFFFF&#x27; as background, 
+		&#x27;#000000&#x27; as textColor, 
+		0 as bold
+	from eventsetup as es
+	join eventparticipation as ep on ep.event_id = es.event_id
+	join teamoptions as t on concat(t.category,t.gender) = concat(ep.category,ep.gender)
+	where t.schedule_key = <span style="color:red">version</span>) as first
+    join teamnotes as tn on first.team_id = tn.id
+    order by tn.name, type;
+	SELECT min(date) as sday, max(date) as eday, min(time) as stime, DATE_ADD(max(time), INTERVAL 50 MINUTE) as etime FROM datetime;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMultipleTeamSchedule(team)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+	SELECT team_id, CONCAT(category, &#x27; &#x27;, gender, (CASE country WHEN &#x27;&#x27; THEN &#x27;&#x27; ELSE &#x27; &#x27; END), country, number) as title FROM team WHERE category != &#x27;Internal&#x27;;
+	select 
+		t.team_id,
+		g.game_id, 
+		date_add(TIMESTAMP(g.date, g.time), interval 5 hour) as start, 
+		date_add(TIMESTAMP(TIMESTAMP(g.date, g.time), &#x27;00:50:00&#x27;), interval 5 hour) as end, 
+		g.location, concat(t0.sport,if(g.type &lt;&gt; &#x27;Round - 1&#x27;,concat(&#x27; &#x27;,g.type),&#x27;&#x27;),&#x27; in &#x27;,g.location,&#x27; (&#x27;,t1.country,t1.number,&#x27;-&#x27;,t2.country,t2.number,&#x27;)&#x27;) as text,
+		&#x27;normal&#x27; as type, 
+		cc.background, 
+		cc.text as textColor, 
+		cc.bold
+	from game as g
+	join team as t on (g.team1_id = t.team_id or g.team2_id = t.team_id)
+	join team as t1 on g.team1_id = t1.team_id
+	join team as t2 on g.team2_id = t2.team_id
+	join colorchart as cc on cc.category = concat(t.category,&#x27; &#x27;, t.gender)
+	join tournament as t0 on g.tournament_id=t0.tournament_id
+	where team1_id is not null and g.status not in (&#x27;DELETED&#x27;,&#x27;HIDDEN&#x27;) and t.team_id in (${team})
+	UNION
+	select
+		tm.team_id,
+		g.game_id,
+		date_add(TIMESTAMP(g.date, g.time), interval 5 hour) as start,
+		date_add(TIMESTAMP(TIMESTAMP(g.date, g.time), &#x27;00:50:00&#x27;), interval 5 hour) as end,
+		g.location,
+		concat(t0.sport,&#x27; &#x27;,g.type,&#x27; in &#x27;,g.location) as text,
+		&#x27;normal&#x27; as type,
+		cc.background as background,
+		cc.text as textColor,
+		cc.bold as bold
+	from game as g
+	join tournament as t0 using(tournament_id)
+	join team as tm using(category,gender)
+	join colorchart as cc on cc.category = concat(tm.category,&#x27; &#x27;,tm.gender)
+	where team1_id is null and g.status not in (&#x27;DELETED&#x27;,&#x27;HIDDEN&#x27;) and g.location &lt;&gt; &#x27;Clipboard&#x27; and tm.team_id in (${team})
+	group by date, start, cc.category, tm.team_id
+	UNION
+	select
+		t.team_id, 
+		es.event_id, 
+		date_add(TIMESTAMP(es.date, es.time), interval 5 hour) as start, 
+		date_add(TIMESTAMP(TIMESTAMP(es.date, es.time), &#x27;00:50:00&#x27;), interval 5 hour) as end, 
+		es.location, concat(es.title,&#x27; @ &#x27;,es.location) as text, 
+		&#x27;special&#x27; as type,
+		&#x27;#FFFFFF&#x27; as background, 
+		&#x27;#000000&#x27; as textColor, 
+		0 as bold
+	from eventsetup as es
+	join eventparticipation as ep on ep.event_id = es.event_id
+	join team as t on concat(t.category,t.gender) = concat(ep.category,ep.gender)
+	where t.team_id in (${team})
+	order by start, location;
+	SELECT min(date) as sday, max(date) as eday, min(time) as stime, DATE_ADD(max(time), INTERVAL 50 MINUTE) as etime FROM datetime;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getDates()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>select date_format(date,&#x27;%a, %b-%d&#x27;) as date, time_format(time,&#x27;%l:%i %p&#x27;) as time from datetime
+					order by date, time</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getDistinctTimes()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>select distinct time from datetime</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamColor(category)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+		select * from colorchart where category = <span style="color:red">category</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMasterScheduleDB()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>select g.game_id, date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, t.tournament_id as tournament_id, g.time, c.category, c.background, c.text as textcolor, c.bold, t.sport, g.location, if(g.team1_id is not NULL, concat(if(g.type &lt;&gt; &#x27;Round - 1&#x27;, concat(left(g.type,1),&#x27;: &#x27;) ,&#x27;&#x27;),t1.country,t1.number,&#x27; vs. &#x27;,t2.country,t2.number,&#x27; &#x27;,g.game_id), concat(left(g.type,1),&#x27;: &#x27;,t.sport,&#x27; &#x27;,g.game_id)) as title, if(g.status in (&#x27;PENDING&#x27;,&#x27;HIDDEN&#x27;), 0, if(g.status = &#x27;Tournament&#x27; and concat(g.date,&#x27; &#x27;,g.time) &gt;= CONVERT_TZ( NOW(),&#x27;GMT&#x27;, &#x27;US/Eastern&#x27;), 0, 1)) as strike from game as g
+	left join team as t1 on g.team1_id=t1.team_id
+	left join team as t2 on g.team2_id=t2.team_id
+	join tournament as t on t.tournament_id=g.tournament_id
+	join colorchart as c on c.category = concat(t.category,&#x27; &#x27;,t.gender)
+	where status &lt;&gt; &#x27;DELETED&#x27;  and g.location &lt;&gt; &#x27;Clipboard&#x27;
+	order by date, time</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getInitTeamSchedulesDB(uid)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre>
+	SELECT team_id, CONCAT(category, &#x27; &#x27;, gender, (CASE country WHEN &#x27;&#x27; THEN &#x27;&#x27; ELSE &#x27; &#x27; END), country, number) as title FROM team WHERE category != &#x27;Internal&#x27;;
+    select s.team_id,g.game_id, date_add(TIMESTAMP(g.date, g.time), interval 5 hour) as start, date_add(TIMESTAMP(TIMESTAMP(g.date, g.time), &#x27;00:50:00&#x27;), interval 5 hour) as end, g.location, concat(t0.sport,if(g.type &lt;&gt; &#x27;Round - 1&#x27;,concat(&#x27; &#x27;,g.type),&#x27;&#x27;),&#x27; in &#x27;,g.location,&#x27; (&#x27;,t1.country,t1.number,&#x27;-&#x27;,t2.country,t2.number,&#x27;)&#x27;) as text,
+        &#x27;normal&#x27; as type
+        from game as g
+        left join team as t1 on t1.team_id=g.team1_id
+        left join team as t2 on t2.team_id=g.team2_id
+        join tournament as t0 on g.tournament_id=t0.tournament_id
+        join subscribe as s on s.team_id = t1.team_id or s.team_id = t2.team_id
+        where s.username = <span style="color:red">uid</span>
+        and g.status &lt;&gt; &#x27;DELETED&#x27;  and g.location &lt;&gt; &#x27;Clipboard&#x27;
+    UNION
+        select s.team_id, g.game_id, date_add(TIMESTAMP(g.date, g.time), interval 5 hour) as start, date_add(TIMESTAMP(TIMESTAMP(g.date, g.time), &#x27;00:50:00&#x27;), interval 5 hour) as end, g.location, concat(t.sport,&#x27; &#x27;,g.type,&#x27; in &#x27;,g.location) as text, &#x27;normal&#x27; as type
+        from tournament as t
+        join game as g on t.tournament_id = g.tournament_id
+        join team as tm on concat(t.category,&#x27; &#x27;,t.gender) = concat(tm.category,&#x27; &#x27;,tm.gender)
+        join subscribe as s on tm.team_id = s.team_id
+        where s.username = <span style="color:red">uid</span>
+        and g.team1_id is NULL
+        and g.status &lt;&gt; &#x27;DELETED&#x27; and g.location &lt;&gt; &#x27;Clipboard&#x27;
+        group by g.date, t.category
+    UNION
+        select s.team_id, es.event_id, date_add(TIMESTAMP(es.date, es.time), interval 5 hour) as start, date_add(TIMESTAMP(TIMESTAMP(es.date, es.time), &#x27;00:50:00&#x27;), interval 5 hour) as end, es.location, concat(es.title,&#x27; @ &#x27;,es.location) as text, &#x27;special&#x27; as type
+        from eventsetup as es
+        join eventparticipation as ep on ep.event_id = es.event_id
+        join team as t on concat(t.category,t.gender) = concat(ep.category,ep.gender)
+        join subscribe as s on t.team_id = s.team_id
+        where s.username = <span style="color:red">uid</span>
+        order by start, location;
+    SELECT min(date) as sday, max(date) as eday, min(time) as stime, DATE_ADD(max(time), INTERVAL 50 MINUTE) as etime FROM datetime;
+	
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamsInVersionDB()</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getPubCapCoRefScheduleChanges(userId, recent)</div><div class="mb-2 text-muted card-subtitle h6">schedule-db.js</div><pre> async function getPubCapCoRefScheduleChanges(userId, recent) {
+	const timestamp_string = recent ? `lv.schedulechanges` : `&#x27;2021-11-14&#x27;`;
+
+	const query = `
+select distinct
+			alias.change_id,
+			alias.game_id,
+			alias.type,
+			alias.date,
+			alias.time, 
+			alias.location,
+			alias.catGender,
+			alias.sport,
+			alias.teams,
+			date_add(alias.timestamp, interval -5 hour) as timestamp_raw,
+			date_format(date_add(alias.timestamp, interval -5 hour),&#x27;%a, %b-%d @ %l:%i %p&#x27;) as timestamp
+		from (
+			select 
+				gc.change_id,
+				g.game_id,
+				g.type,
+				date_format(gc.date,&#x27;%a, %b-%d&#x27;) as date, 
+				date_format(gc.time,&#x27;%l:%i %p&#x27;) as time, 
+				gc.location,
+				concat(t.category,&#x27; &#x27;,t.gender) as catGender,
+				lower(t.sport) as sport,
+				concat(t1.country,&#x27; &#x27;,t1.number,&#x27; vs. &#x27;,t2.country,&#x27; &#x27;,t2.number) as teams,
+				gc.timestamp
+			from gameoptionschangelog as gc
+            join scheduleoptions as so using(schedule_key)
+			join game as g on g.game_id = gc.game_id
+			join tournament as t on t.tournament_id = g.tournament_id
+			left join team as t1 on g.team1_id = t1.team_id
+			left join team as t2 on g.team2_id = t2.team_id
+			where published = 1
+            
+			union
+		
+			select
+				9999 as change_id,
+				g.game_id,
+				g.type,
+				date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, 
+				date_format(g.time,&#x27;%l:%i %p&#x27;) as time, 
+				g.location,
+				concat(t.category,&#x27; &#x27;,t.gender) as catGender,
+				lower(t.sport) as sport,
+				concat(t1.country,&#x27; &#x27;,t1.number,&#x27; vs. &#x27;,t2.country,&#x27; &#x27;,t2.number) as teams,
+				current_timestamp() as timestamp
+			from game as g
+			join gameoptionschangelog as gc using(game_id)
+            join scheduleoptions as so using(schedule_key)
+			join tournament as t on t.tournament_id = g.tournament_id
+			left join team as t1 on g.team1_id = t1.team_id
+			left join team as t2 on g.team2_id = t2.team_id
+            where published = 1) 
+		as alias
+		join game as g using(game_id)
+		left join team as t1 on g.team1_id = t1.team_id
+		left join team as t2 on g.team2_id = t2.team_id
+		left join subscribe as s on s.team_id = t1.team_id or s.team_id = t2.team_id or (t1.team_id is null and g.tournament_id in (select distinct tournament_id 
+																																	from tournament as t
+																																	join game as g using(tournament_id)
+																																	join subscribe as s on g.team1_id = s.team_id or g.team2_id = s.team_id
+																																	where s.username = <span style="color:red">userId</span>))
+		left join coach as co on co.team_id = t1.team_id or co.team_id = t2.team_id or (t1.team_id is null and g.tournament_id in (select distinct tournament_id 
+																																	from tournament as t
+																																	join game as g using(tournament_id)
+																																	join coach as co on g.team1_id = co.team_id or g.team2_id = co.team_id
+																																	where co.username = <span style="color:red">userId</span>))
+																																	left join captain as ca on ca.country = t1.country or ca.country = t2.country or (t1.team_id is null and g.tournament_id in (select distinct tournament_id 
+																																	from tournament as t
+																																	join game as g using(tournament_id)
+																																	join team as t1 on g.team1_id = t1.team_id
+																																	join team as t2 on g.team2_id = t2.team_id
+																																	join captain as ca on t1.country = ca.country or t2.country = ca.country
+																																	where ca.username = <span style="color:red">userId</span>))
+		
+		left join referee as ref on lower(ref.sport) = alias.sport
+		left join lastvisits as lv on lv.username = <span style="color:red">userId</span>
+		where 
+			timestamp &gt;= ${timestamp_string} and
+			(s.username = <span style="color:red">userId</span> or 
+			co.username = <span style="color:red">userId</span> or
+			ca.username = <span style="color:red">userId</span> or
+			ref.username = <span style="color:red">userId</span>)
+		order by game_id, change_id desc;
+	`;
+	
+	return await dbQuery(query);
+}
+
+// @query
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">masterStandings()</div><div class="mb-2 text-muted card-subtitle h6">standings-db.js</div><pre>
+		create temporary table standingcards
+		select 
+			t.tournament_id, 
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tournament, 
+			if(s.pool = &#x27;Pool 0&#x27;, &#x27;&#x27;, s.pool) as pool,
+			s.team_id,
+			concat(tm.country,&#x27; &#x27;,tm.number) as team,
+			concat(tm.country,tm.number) as shirt,
+			s.rank,
+			s.wins,
+			s.losses,
+			s.ties,
+			s.raw_points,
+			s.h2h,
+			s.pd,
+			s.h2h2,
+			s.gif,
+			s.vbpd,
+			if(qualify = 1, &#x27;Yes&#x27;, if(qualify = 0, &#x27;No&#x27;, &#x27;&#x27;)) as qualify
+		from standings as s
+		join tournament as t on s.tournament_id = t.tournament_id
+		join team as tm on s.team_id = tm.team_id
+		order by tournament, pool, rank;
+		select * from standingcards;
+		drop table standingcards;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">myStandings(userId)</div><div class="mb-2 text-muted card-subtitle h6">standings-db.js</div><pre>
+		set @userId = <span style="color:red">userId</span>;
+		create temporary table mytournaments
+		select distinct
+			t.tournament_id, 
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tournament 
+		from tournament as t
+		join pool as p on t.tournament_id = p.tournament_id
+		join sport as sp on t.sport = sp.sport
+		join subscribe as s on p.team_id = s.team_id
+		where 
+			sp.forfeit_score &lt;&gt; 0 and s.username = @userId
+		order by tournament;
+		create temporary table mystandingcards
+		select distinct
+			t.tournament_id, 
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tournament, 
+			if(s.pool = &#x27;Pool 0&#x27;, &#x27;&#x27;, s.pool) as pool,
+			s.team_id,
+			concat(tm.country,&#x27; &#x27;,tm.number) as team,
+			concat(tm.country,tm.number) as shirt,
+			s.rank,
+			s.wins,
+			s.losses,
+			s.ties,
+			s.raw_points,
+			s.h2h,
+			s.pd,
+			s.h2h2,
+			s.gif,
+			s.final_points,
+			s.vbpd,
+			t.sport,
+			if(qualify = 1, &#x27;Yes&#x27;, if(qualify = 0, &#x27;No&#x27;, &#x27;&#x27;)) as qualify, 
+			m.color as medal,
+			vbpd as &#x27;VB PD&#x27;,
+			concat(t.category, &#x27; &#x27;, t.gender) as category
+		from standings as s
+		join tournament as t on s.tournament_id = t.tournament_id
+		join team as tm on s.team_id = tm.team_id
+		join mytournaments as mt on s.tournament_id = mt.tournament_id
+		left join medal as m on t.tournament_id = m.tournament_id and tm.team_id = m.team_id
+		order by tournament, pool, rank;
+		select * from mystandingcards;
+		drop table mytournaments;
+		drop table mystandingcards;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">mobileMedalsMain()</div><div class="mb-2 text-muted card-subtitle h6">standings-db.js</div><pre>
+	select 
+		m.country, 
+		sum(case when color = 2 then 1 else 0 end) as gold, 
+		sum(case when color = 1 then 1 else 0 end) as silver, 
+		sum(case when (color = 2 and type = &#x27;team&#x27;) then 2.5 when (color = 2 and type = &#x27;individual&#x27;) then 1.0 else 0 end) + sum(case when (color = 1 and type = &#x27;team&#x27;) then 1.0 when (color = 1 and type = &#x27;individual&#x27;) then 0.4 else 0 end) as pts, 
+		round(((sum(case when (color = 2 and type = &#x27;team&#x27;) then 2.5 when (color = 2 and type = &#x27;individual&#x27;) then 1.0 else 0 end) + sum(case when (color = 1 and type = &#x27;team&#x27;) then 1.0 when (color = 1 and type = &#x27;individual&#x27;) then 0.4 else 0 end))/teamcount.count), 2) as weighted  
+	from 
+	(select 
+		country, 
+		color, 
+		&#x27;team&#x27; as type 
+	from medal
+	join team using(team_id)
+	union all
+	select 
+		country, 
+		color, 
+		&#x27;individual&#x27; as type 
+	from individualmedal) as m
+	join (select country, count(*) as count from team as teamjoin group by country) as teamcount using(country)
+	group by m.country
+	order by pts desc, m.country;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">mobileMedalsSub()</div><div class="mb-2 text-muted card-subtitle h6">standings-db.js</div><pre>select 
+						t.country, 
+						m.medal_id, 
+						concat(t.category,&#x27; &#x27;,t.gender,&#x27; &#x27;,t.country,&#x27; &#x27;,t.number) as teamLong, 
+						concat(t.country,t.number) as teamShort, 
+						concat(t0.category,&#x27; &#x27;,t0.gender,&#x27; &#x27;,t0.sport) as tournament, 
+						m.color from medal as m
+					join tournament as t0 on m.tournament_id = t0.tournament_id
+					join team as t on m.team_id = t.team_id
+
+					union all
+
+					select country, 0, &#x27;teamLong&#x27;, &#x27;teamShort&#x27;, title, color from individualmedal as im
+					join eventsetup as es using(event_id)
+
+					order by country, color, tournament;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">tiedTeams()</div><div class="mb-2 text-muted card-subtitle h6">standings-db.js</div><pre>select
+		t0.tournament_id,
+		t.team_id,
+		pool,
+		concat(t0.category,&#x27; &#x27;,t0.sport) as tournament,
+		concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,&#x27; &#x27;,t.number) as team,
+		final_points
+	from standings as s
+	join tournament as t0 using(tournament_id)
+	join team as t using(team_id)
+	where (tournament_id, pool, final_points) in (
+	#tied tournament-pool combinations
+	select tournament_id, pool, final_points from standings
+	group by tournament_id, pool, final_points
+	having count(*) &gt; 1 and (tournament_id, pool) not in (
+	#pending tournaments-pool combinations
+	select
+		t.tournament_id,
+		p.pool
+	from game as g
+	join tournament as t using(tournament_id)
+	join pool as p on t.tournament_id = p.tournament_id and g.team1_id = p.team_id
+	where type = &#x27;Round - 1&#x27; and status = &#x27;PENDING&#x27;
+	group by t.tournament_id, p.pool));</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">untieTeam(ranking, tournamentId, teamId, pool)</div><div class="mb-2 text-muted card-subtitle h6">standings-db.js</div><pre>
+	
+	insert into untieteams
+	values (<span style="color:red">tournamentId</span>, <span style="color:red">teamId</span>, <span style="color:red">pool</span>, 5- <span style="color:red">ranking</span>);
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getSubscriptions(userId)</div><div class="mb-2 text-muted card-subtitle h6">subscription-db.js</div><pre>select
+						distinct s.team_id,
+						if( t.category not in (&#x27;Young&#x27; ),concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number), concat(t.category,&#x27; &#x27;,t.gender)) as name,
+						concat(t.category,&#x27; &#x27;,t.gender) as cc_key,
+						concat(t.country,&#x27; &#x27;,t.number) as short,
+						concat(t.country,t.number) as shirt,
+						cc.bold,
+						cc.background,
+						cc.text
+					from subscribe as s
+					join team as t on s.team_id = t.team_id
+					join colorchart as cc on concat(t.category,&#x27; &#x27;,t.gender) = cc.category
+					where s.username = <span style="color:red">userId</span>;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">deleteSubscription(body)</div><div class="mb-2 text-muted card-subtitle h6">subscription-db.js</div><pre>delete from subscribe where username = <span style="color:red">body.userId</span> and team_id = <span style="color:red">body.teamId</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">addSubscription(body)</div><div class="mb-2 text-muted card-subtitle h6">subscription-db.js</div><pre>insert into subscribe values(<span style="color:red">body.userId</span>,<span style="color:red">body.teamId</span>)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getAllTeams()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select
+			t.team_id as id,
+			t.country,
+			concat(t.category,&#x27; &#x27;,t.gender,
+				if(t.country not in (&#x27;&#x27;),&#x27; - &#x27;,&#x27;&#x27;),
+				t.country,&#x27; &#x27;,t.number) as team_name
+		from team as t 
+		where t.category not in (&#x27;Internal&#x27;, &#x27;Ch F&#x27;)
+		order by concat(t.category,&#x27; &#x27;,t.gender,&#x27; &#x27;,t.country,t.number) asc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getAllUsers()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select 
+			username,
+			concat(first_name, &#x27; &#x27;, last_name) as name
+		from user
+		order by name
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCategories()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select distinct t.category, t.gender from team as t
+								where t.category not in (&#x27;Ch F&#x27;,&#x27;Internal&#x27;)
+								order by concat(t.category, t.gender) asc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamsByCaptain(userId)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select username, long_name, concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number) as team_name, t.team_id from captain as cap
+					join country as co on co.short_name = cap.country
+					join team  as t on cap.country = t.country
+					where username = (select u.username from user as u where username = <span style="color:red">userId</span>) 
+					order by team_name</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamsByCoach(userId)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select t.team_id, concat(t.category, &#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number) as team, co.long_name from coach as c
+					join team as t on c.team_id = t.team_id
+					join country as co on t.country = co.short_name
+					where c.username = (select u.username from user as u where username = <span style="color:red">userId</span>)
+					order by team</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamName(teamId, schedule_key)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number) as name from teamoptions as t
+					where t.team_id = <span style="color:red">teamId</span> and schedule_key=<span style="color:red">schedule_key</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamNamePublished(teamId)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number) as name from team as t
+					where t.team_id = <span style="color:red">teamId</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamID(teamName)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select team_id from team as t
+		where concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number) = <span style="color:red">teamName</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamIDSpaced(teamName)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select team_id from team as t
+	where concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country, &#x27; &#x27;, t.number) = <span style="color:red">teamName</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getGameType(gameID, schedule_key)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select type as gameType from gameoptions where game_id = <span style="color:red">gameID</span>
+					and schedule_key=<span style="color:red">schedule_key</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCountries()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select * from country where short_name &lt;&gt; &#x27;&#x27; and short_name &lt;&gt; &#x27;BIG&#x27; and short_name &lt;&gt; &#x27;ACC&#x27; and short_name &lt;&gt; &#x27;INT&#x27; </pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getLocations()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select l.location_id as locationId, l.sport, l.location_name as locationName from location as l
+								where sport &lt;&gt; &#x27;&#x27;
+								order by l.location_name asc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getAllTeamNotes()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select * from teamnotes</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamCountryCombo()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select distinct
+			country,
+			concat(category, &#x27; &#x27;, gender, &#x27; - &#x27;, country, &#x27; &#x27;, number) as team_name from teamoptions
+		where team_id &gt; 10 and category &lt;&gt; &#x27;Internal&#x27;;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">updateTeamNotes(newNotes,teamID)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>update teamnotes 
+					set notes=<span style="color:red">newNotes</span> 
+					where name = <span style="color:red">teamID</span>;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getUniqueLocations()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select location_id, location_name from location  where location_name &lt;&gt; &quot;Clipboard&quot; group by  location_name</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getPoolAssignments()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select 
+						concat(t.category,&#x27; &#x27;,t.gender) as category,
+						t.sport,
+						p.pool,
+						concat(tm.category,&#x27; &#x27;,tm.gender,&#x27; &#x27;,tm.country,&#x27; &#x27;,tm.number) as team 
+					from pool as p 
+					join tournament as t on p.tournament_id = t.tournament_id
+					join team as tm on p.team_id = tm.team_id
+					where p.pool in (&#x27;Pool A&#x27;,&#x27;Pool B&#x27;)
+					order by category, t.sport, p.pool, team</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTournaments()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		create temporary table alltournaments
+		select 
+			t.tournament_id, 
+			concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tournament, 
+			cc.background, 
+			cc.text, 
+			cc.bold
+		from tournament as t
+		join sport as s on t.sport = s.sport
+		join colorchart as cc on concat(t.category,&#x27; &#x27;,t.gender) = cc.category
+		where s.forfeit_score &lt;&gt; 0
+		order by tournament;
+		select * from alltournaments;
+		drop table alltournaments;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTournamentsColorChart()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select 
+			schedule_key,
+			t.tournament_id as tournamentId, 
+			concat(t.category,&#x27; &#x27;,t.gender) as category,
+			t.sport, 
+			t.qual_number as qualNumber, 
+			concat(t.category,&#x27; &#x27;,t.gender,if(t.sport &lt;&gt; &#x27;&#x27;,&#x27; - &#x27;,&#x27;&#x27;),t.sport) as name,
+			cc.background,
+			cc.text,
+			cc.bold
+		from tournamentoptions as t 
+		join sport as s on t.sport = s.sport
+		join colorchart as cc on concat(t.category,&#x27; &#x27;,t.gender) = cc.category
+		where t.category not in (&#x27;Ch F&#x27;) and s.forfeit_score &lt;&gt; 0
+		order by name asc
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTournamentSAF()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select t.tournament_id as tournamentId, t.category, t.gender, t.sport, t.qual_number as qualNumber, concat(t.category,&#x27; &#x27;,t.gender,if(t.sport &lt;&gt; &#x27;&#x27;,&#x27; - &#x27;,&#x27;&#x27;),t.sport) as name from tournament as t 
+								where t.category not in (&#x27;Ch F&#x27;)
+								order by name asc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getGameNotes()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select game_id,
+		schedule_key,
+		group_concat(reason separator &#x27;;\n &#x27;) as reasons
+		from gameoptionschangelog
+		join scheduleoptions using(schedule_key)
+		group by schedule_key, game_id;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getUnassignedTeamNotes()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select 
+		schedule_key,
+		game_id,
+		group_concat(reason separator &#x27;;\n &#x27;) as reasons
+		from (select 
+					schedule_key,
+					game_id,
+					concat(tn.name,&#x27;: &#x27;,tn.notes) as reason
+				from gameoptions as go
+				join tournamentoptions as t using(tournament_id,schedule_key)
+				join teamoptions as tm using(schedule_key,category,gender)
+				join teamnotes as tn on tm.team_id = tn.id
+				where team1_id is null and tn.notes &lt;&gt; &#x27;&#x27;) as a
+		group by schedule_key, game_id;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamsColorChart()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+	(select distinct 
+		tor.schedule_key,
+		tor.tournament_id, 
+		t1.team_id as teamId, 
+		concat(t1.country,t1.number) as short,
+		concat(t1.category,&#x27; &#x27;,t1.gender,if(t1.country not in (&#x27;&#x27;),&#x27; - &#x27;,&#x27;&#x27;),t1.country,t1.number) as name,
+		tn.notes
+	from tournamentoptions as tor
+	join gameoptions as g on tor.tournament_id = g.tournament_id and tor.schedule_key = g.schedule_key
+	join teamoptions as t1 on g.team1_id = t1.team_id and g.schedule_key = t1.schedule_key
+	left join teamnotes as tn on concat(t1.category,&#x27; &#x27;,t1.gender,&#x27; - &#x27;,t1.country,&#x27; &#x27;,t1.number) = tn.name
+	order by tor.tournament_id, t1.team_id)
+	UNION
+	(select distinct 
+		tor.schedule_key,
+		tor.tournament_id, 
+		t2.team_id as teamId, 
+		concat(t2.country,t2.number) as short,
+		concat(t2.category,&#x27; &#x27;,t2.gender,if(t2.country not in (&#x27;&#x27;),&#x27; - &#x27;,&#x27;&#x27;),t2.country,t2.number) as name,
+		tn.notes
+	from tournamentoptions as tor
+	join gameoptions as g on tor.tournament_id = g.tournament_id and tor.schedule_key = g.schedule_key
+	left join teamoptions as t2 on g.team2_id = t2.team_id and g.schedule_key = t2.schedule_key
+	join teamnotes as tn on concat(t2.category,&#x27; &#x27;,t2.gender,&#x27; - &#x27;,t2.country,&#x27; &#x27;,t2.number) = tn.name
+	order by tor.tournament_id, t2.team_id)
+	order by tournament_id, name
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMyTournaments(userId)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+	create temporary table mytournaments
+	select distinct
+		t.tournament_id, 
+		concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.sport) as tournament 
+	from tournament as t
+	join pool as p on t.tournament_id = p.tournament_id
+	join sport as sp on t.sport = sp.sport
+	join subscribe as s on p.team_id = s.team_id
+	where 
+		sp.forfeit_score &lt;&gt; 0 and s.username =  <span style="color:red">userId</span>
+	order by tournament;
+	select * from mytournaments;
+	drop table mytournaments;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getSportsDB()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select s.sport, forfeit_score as forfeitScore, rachmanus_max_pd as maxPd from sport as s
+								where s.sport not in (&#x27;dummy&#x27;)
+								order by s.sport asc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamCoaches(teamId)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select concat(u.first_name, &#x27; &#x27;, u.last_name) as name, u.username from coach as c
+					join user as u on c.username = u.username
+					where c.team_id = <span style="color:red">teamId</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getTeamSubscribers(teamId)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select u.username, concat(u.first_name,&#x27; &#x27;,u.last_name) as name from subscribe as s
+		join user as u on s.username = u.username
+		left join coach as c on s.username = c.username and s.team_id = c.team_id
+		where c.username is null and s.team_id = <span style="color:red">teamId</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCombinationsDB()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select distinct 
+			country,
+			category,
+			gender,
+			second.pre,
+			num,
+			if(third.pre is null,0,1) as unassigned 
+		from
+		(select distinct
+			r.country,
+			t.category,
+			t.gender
+		from registrants as r
+		left join tournamentoptions as t
+		on concat(t.category, &#x27; &#x27;, t.gender)=r.category_gender
+		where country not in (&#x27;&#x27;, &#x27;INT&#x27;) and category is not null
+		order by country, category, gender) as first
+		join 
+		(select left(name, length(name) - 2) as pre, max(right(name,1)) as num
+		from teamnotes
+		group by pre
+		order by num desc) as second on concat(category,&#x27; &#x27;,gender,&#x27; - &#x27;,country) = second.pre
+		left join 
+		(select concat(category_gender,&#x27; - &#x27;,country) as pre from registrants
+		where team is null and is_registered = 1) as third on second.pre = third.pre;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCombinationsForCaptain(username)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select distinct
+			country,
+			category,
+			gender,
+			left(tn.name, length(tn.name) - 2) as pre,
+			if(third.pre is null,0,1) as unassigned 
+		from teamnotes as tn
+		join teamoptions as tmo on concat(tmo.category,&#x27; &#x27;,tmo.gender,&#x27; - &#x27;,tmo.country) = left(tn.name, length(tn.name) - 2)
+		join captain as ca using(country)
+		left join 
+		(select concat(category_gender,&#x27; - &#x27;,country) as pre from registrants
+		where team is null and is_registered = 1) as third on left(tn.name, length(tn.name) - 2) = third.pre
+		where ca.username = <span style="color:red">username</span>
+		order by pre;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCaptainTeams(username)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select distinct 
+			country, 
+			category, 
+			gender, 
+			tn.name
+		from teamnotes as tn
+		join teamoptions as tmo
+		on concat(tmo.category,&#x27; &#x27;,tmo.gender,&#x27; - &#x27;,tmo.country) = left(tn.name, length(tn.name) - 2)
+		join captain as ca using(country)
+		where ca.username = <span style="color:red">username</span>
+		order by name
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getPlayersDB(catGender, country)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+	select 
+		r.registrant_id, 
+		concat(r.firstname,&#x27; &#x27;,r.lastname, &#x27; (&#x27;, left(r.gender, 1), &#x27; - &#x27;, r.grade, &#x27;)&#x27;) as name, 
+		r.category_gender, 
+		r.country,
+		r.grade,
+		r.gender,
+		r.team as team_id,
+		concat(t.category, &#x27; &#x27;, t.gender, &#x27; &#x27;, t.country, &#x27; &#x27;, t.number) as teamname 
+	from registrants as r
+	left join team as t
+	on r.team=concat(t.category,&#x27; &#x27;,t.gender,&#x27; &#x27;,t.country,t.number)
+	where r.is_registered = 1
+	and r.category_gender = <span style="color:red">catGender</span>
+	and r.country = <span style="color:red">country</span>
+	order by r.grade, r.gender, r.lastname, r.firstname;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">assignPlayerDB(registrant_id, teamId, username)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>update registrants
+					set team = <span style="color:red">teamId</span>,
+					updated_by = <span style="color:red">username</span>
+					where registrant_id = <span style="color:red">registrant_id</span>;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">unassignPlayerDB(registrant_id, username)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>update registrants
+					set team = null,
+					updated_by = <span style="color:red">username</span>
+					where registrant_id = <span style="color:red">registrant_id</span>;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">unassignAllDB(catGender, country, username)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>update registrants
+	set team = null,
+	updated_by = <span style="color:red">username</span>
+	where category_gender = <span style="color:red">catGender</span> and
+	country = <span style="color:red">country</span>;</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getAllEventInfo()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+	SELECT distinct category, gender FROM tournament;
+	SELECT 
+		event_id,
+		title,
+		date,
+		time,
+		location,
+		duration,
+		date_format(date, &#x27;%a, %b-%d&#x27;) as displayDate
+	FROM eventsetup order by title;
+	SELECT event_id, category, gender from eventparticipation;
+	select e.event_id, e.username, concat(u.first_name, &#x27; &#x27;, u.last_name) as name
+	from eventcoordinator as e
+	join user as u on e.username = u.username</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getEventInfo(id)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>SELECT * FROM eventsetup where event_id = <span style="color:red">id</span>;
+	SELECT event_id, category, gender from eventparticipation where event_id = <span style="color:red">id</span>;
+	select e.event_id, e.username, concat(u.first_name, &#x27; &#x27;, u.last_name) as name
+	from eventcoordinator as e  
+	join user as u on e.username = u.username where e.event_id = <span style="color:red">id</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">deleteEventFunc(id)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>delete from eventsetup where event_id = <span style="color:red">id</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCoordinatorEvents(username)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select 
+                        e.event_id,
+                        e.title,
+                        date_format(e.date, &#x27;%a, %b %d&#x27;) as date,
+                        date_format(e.time, &#x27;%l:%i %p&#x27;) as time,
+                        e.location,
+                        concat(e.duration, &#x27; minutes&#x27;) as duration,
+                        c.username
+                    from eventsetup as e
+                    join eventcoordinator as c on e.event_id = c.event_id
+                    where c.username = <span style="color:red">username</span>
+					group by title</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getAllEvents(username)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select 
+                        e.event_id,
+                        e.title,
+                        date_format(e.date, &#x27;%a, %b %d&#x27;) as date,
+                        date_format(e.time, &#x27;%l:%i %p&#x27;) as time,
+                        e.location,
+                        concat(e.duration, &#x27; minutes&#x27;) as duration,
+                        <span style="color:red">username</span> as username
+                    from eventsetup as e
+					group by title</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getPointsByEvent(event_id, username, is_admin)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>select
+                        points_id,
+                        event_id,
+                        country,
+                        if (awardee_type=1, awardee, &#x27;&#x27;) as awardee,
+                        points_description,
+                        if (color=1, &#x27;Silver&#x27;, &#x27;Gold&#x27;) as medal_type,
+                        if (username=<span style="color:red">username</span> or ${is_admin}, 1,0) as canDelete
+                    from individualmedal
+                    where event_id = <span style="color:red">event_id</span>
+                    order by points_id desc</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">addPointsToEvent(body)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>insert into individualmedal values (
+        0,
+        <span style="color:red">body.event_id</span>,
+        <span style="color:red">body.short_name</span>,
+        <span style="color:red">body.awardee_type</span>,
+        <span style="color:red">body.awardee</span>,
+        <span style="color:red">body.points_description</span>,
+        <span style="color:red">body.num_points</span>,
+        <span style="color:red">body.username</span>
+    )</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">deletePointsFromEvent(points_id, username)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>delete from individualmedal
+                    where username=<span style="color:red">username</span> and points_id=${points_id}</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getColorChartScores()</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre>
+		select 
+			schedule_key, 
+			game_id, 
+			concat(score1,&#x27; - &#x27;,score2) as score,
+			concat(team1_set1,&#x27; - &#x27;,team2_set1) as set1,
+			concat(team1_set2,&#x27; - &#x27;,team2_set2) as set2,
+			concat(team1_set3,&#x27; - &#x27;,team2_set3) as set3
+		from sign as s
+		join gameoptions as go using(game_id)
+		join scheduleoptions as so using(schedule_key)
+		left join setscore as ss using(game_id)
+		where published = 1;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">createEventFunc(title, location, date, startTime, duration, coords, categories)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre> async function createEventFunc(title, location, date, startTime, duration, coords, categories) {
+	let query = `insert into eventsetup values (0, <span style="color:red">title</span>, <span style="color:red">date</span>, <span style="color:red">startTime</span>, <span style="color:red">location</span>, <span style="color:red">duration</span>);
+	set @eventID = (SELECT LAST_INSERT_ID());`
+
+	categories.forEach(obj =&gt; {query = query.concat(`insert into eventparticipation values(@eventID, <span style="color:red">obj.category</span>, <span style="color:red">obj.gender</span>);`)})
+	coords.forEach(obj =&gt; {query = query.concat(`insert into eventcoordinator values(@eventID, <span style="color:red">obj.id</span>);`)})
+	const finalQuery = query;
+
+	return await dbQuery(finalQuery);
+}
+
+// @query
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">updateEventFunc(id, changes, newCoords, removedCoords, newCats, removedCats)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre> async function updateEventFunc(id, changes, newCoords, removedCoords, newCats, removedCats) {
+	let query = &#x27;&#x27;;
+	if (changes.length &gt; 0){
+		query = query.concat(`UPDATE eventsetup set `);
+		for(let i = 0; i &lt; changes.length; i++)
+		{
+			i === changes.length - 1 ? query = query.concat(changes[i].type, ` = <span style="color:red">changes[i].new</span> `) : query = query.concat(changes[i].type,` = <span style="color:red">changes[i].new</span>, `);
+		}
+		query = query.concat(`WHERE event_id = <span style="color:red">id</span>;`);
+	}
+
+	newCoords.forEach(obj =&gt; {query = query.concat(`INSERT into eventcoordinator values(<span style="color:red">id</span>, <span style="color:red">obj.id</span>);`)})
+	removedCoords.forEach(obj =&gt; {query = query.concat(`DELETE from eventcoordinator WHERE event_id = <span style="color:red">id</span> AND username = <span style="color:red">obj.id</span>;`)})
+
+	newCats.forEach(obj =&gt; {query = query.concat(`INSERT into eventparticipation values(<span style="color:red">id</span>, <span style="color:red">obj.category</span>, <span style="color:red">obj.gender</span>);`)})
+	removedCats.forEach(obj =&gt; {query = query.concat(`DELETE from eventparticipation WHERE event_id = <span style="color:red">id</span> AND category = <span style="color:red">obj.category</span> AND gender =  <span style="color:red">obj.gender</span>;`)})
+
+	const finalQuery = query;
+	
+	if (finalQuery !== &#x27;&#x27;)
+		return await dbQuery(finalQuery);
+	else
+		return &#x27;Query was empty&#x27;;
+}
+
+// @query
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">assignBroadcast(body, teamid)</div><div class="mb-2 text-muted card-subtitle h6">tournament-db.js</div><pre> async function assignBroadcast(body, teamid) { //checked 2019-06-05
+	const content = `Congratulations! You have been assigned to ${body.tournamentName} ${body.type} on ${body.date} at ${body.time} on ${body.location}`;
+	const query = `insert into post
+								select 0,concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),&#x27;${content}&#x27;,t.team_id,&#x27;teamassignment&#x27;,current_timestamp, sha1(concat(concat(t.category,&#x27; &#x27;,t.gender,&#x27; - &#x27;,t.country,t.number),&#x27;${content}&#x27;,current_timestamp)), 1 from team as t
+								where t.team_id = <span style="color:red">teamid</span>;`;
+
+	return await dbQuery(query);
+}
+
+// @query
+</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getPotentialCaptains()</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select u.username, concat(u.first_name,&#x27; &#x27;,u.last_name) as name
+		from user as u
+		left join captain as c on u.username=c.username
+		where c.country is null;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCaptains()</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select u.username, concat(u.first_name,&#x27; &#x27;,u.last_name) as name, c.country
+		from captain as c
+		left join user as u
+		on c.username = u.username
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">addToCaptainTable(username, country)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>insert into captain
+					select <span style="color:red">username</span>, <span style="color:red">country</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">removeFromCaptainTable(username, country)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>delete from captain
+					where username = <span style="color:red">username</span> and country = <span style="color:red">country</span></pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getCoaches(team)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select username, concat(first_name,&#x27; &#x27;,last_name) as name from coach as c
+		join teamnotes as tn on c.team_id = tn.id
+		join user as u using(username)
+		where tn.name = <span style="color:red">team</span>
+		order by name;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">addSportForRef(username, sport)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		insert into referee values (<span style="color:red">username</span>, <span style="color:red">sport</span>);
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">removeSportForRef(username, sport)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		delete from referee where username=<span style="color:red">username</span> and sport=<span style="color:red">sport</span>
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getSports()</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select sport from sport where forfeit_score &lt;&gt; 0
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getRefSports()</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select username, sport from referee
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getPotentialCoaches(team)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select u.username, concat(u.first_name,&#x27; &#x27;,u.last_name) as name from subscribe as s
+		join teamnotes as tn on s.team_id = tn.id
+		join user as u on s.username = u.username
+		left join coach as c on s.username = c.username and s.team_id = c.team_id
+		where c.username is null and tn.name = <span style="color:red">team</span>
+		order by name;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">addToCoachTable(username, team)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		insert into coach
+		select <span style="color:red">username</span>, id
+		from teamnotes where name = <span style="color:red">team</span>
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">addCoachToInternalChannel(username)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		insert into subscribe (username,team_id) values (<span style="color:red">username</span>,2)
+		on duplicate key update username = <span style="color:red">username</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">isUserStillCoach(username)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select count(*) as is_still_coach from coach where username=<span style="color:red">username</span>
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">removeFromCoachTable(username, team)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		delete from coach
+		where username = <span style="color:red">username</span>
+		and team_id = (select id from teamnotes where name = <span style="color:red">team</span>)</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getAllUsersDB()</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>&#x27;select username, first_name, last_name, user_type from user&#x27;
+		return await dbQuery(query)
+	}catch(e) {
+		console.log(&quot;Error!&quot;, e)
+	}
+}
+
+// </pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getFilteredUsersDB(userType)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select username, first_name, last_name, user_type from user
+		where user_type= <span style="color:red">userType</span>
+		</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">addFCM(userId, token)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>REPLACE INTO notify (fcm_token,username) VALUES ( <span style="color:red">token</span> , <span style="color:red">userId</span>);</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">removeFCM(userId)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>REPLACE INTO notify (fcm_token, username) values (&#x27;&#x27;, <span style="color:red">userId</span>);</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMyNewsfeedPt1(userId)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select distinct
+			p.title,
+			p.post,
+			u.username,
+			u.first_name,
+			u.last_name,
+			poster_username,
+			p.time_stamp,
+			p.comments_allowed,
+			p.social_hash_id,
+			count(l.username) as total_likes,
+			exists(
+				select *
+				from likes as l
+				where l.username = <span style="color:red">userId</span> 
+					and l.social_hash_id = p.social_hash_id
+				) as liked from post as p
+		join subscribe as s on s.team_id = p.team_id
+		join user as u on u.username = p.poster_username
+		join lastvisits as lv on s.username = lv.username
+		left join likes as l on l.social_hash_id = p.social_hash_id
+		where s.username = <span style="color:red">userId</span> and p.time_stamp &gt; lv.newsfeed
+		group by p.post_id
+		order by p.time_stamp desc
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMyNewsfeedPt2(userId)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select distinct
+			c.comment_id,
+			p.social_hash_id,
+			concat(u.first_name,&#x27; &#x27;,u.last_name) as poster,
+			c.time_stamp,
+			c.comment,
+			c.comment_id
+		from post as p
+		join comment as c on c.social_hash_id = p.social_hash_id
+		left join badcomments as bc on c.comment_id = bc.comment_id
+		join user as u on u.username = c.poster_username
+		join lastvisits as lv on u.username = lv.username
+		join subscribe as s on s.team_id = p.team_id
+		where s.username = <span style="color:red">userId</span>
+			and bc.comment_id is null
+			and p.time_stamp &gt; lv.newsfeed
+		order by c.time_stamp desc;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">getMyRecentScores(userId)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select
+			g.game_id,
+			concat(t0.category,&#x27; &#x27;,t0.gender,&#x27; - &#x27;,t0.sport) as tournament,
+			date_format(g.date, &#x27;%W, %m/%d&#x27;) as date,
+			date_format(g.time, &#x27;%h:%i %p&#x27;) as time,
+			g.location,
+			concat(t1.country, &#x27; &#x27;, t1.number) as short1,
+			concat(t2.country,&#x27; &#x27; , t2.number) as short2,
+			t1.country as flag1,
+			t2.country as flag2,
+			concat(s.score1,&#x27; - &#x27;,s.score2) as score,
+			if(ss.game_id,1,0) as hasSet,
+			concat(ss.team1_set1,&#x27; - &#x27;,ss.team2_set1) as set1,
+			concat(ss.team1_set2,&#x27; - &#x27;,ss.team2_set2) as set2,
+			concat(ss.team1_set3,&#x27; - &#x27;,ss.team2_set3) as set3,
 			t0.sport,
-		sp.forfeit_score as forfeit, g.type, status, date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, if(p.pool = &#x27;Pool 0&#x27;, &#x27;&#x27;, p.pool) as pool, time_format(g.time,&#x27;%l:%i %p&#x27;) as time,
-		location, team1_id, team2_id,  t1.country as country1, t1.number as number1,
-		t2.country as country2, t2.number as number2, t1.category,
-		t1.gender from game as g
-		join team as t1 on t1.team_id = g.team1_id
-		join team as t2 on t2.team_id = g.team2_id
-		join tournament as t0 on t0.tournament_id= g.tournament_id
-		left join pool as p on p.team_id=t1.team_id
-		join sport as sp on t0.sport=sp.sport
-		where status = &#x27;PENDING&#x27; and game_id = ${con.escape(value)} and p.tournament_id=t0.tournament_id
-        order by g.date asc, g.time asc</pre><p>game-db.js</p></div><div><p>searchGamesByLocation</p><pre>select distinct game_id, t0.tournament_id, t0.sport,
-		sp.forfeit_score as forfeit, g.type, status, date_format(g.date,&#x27;%a, %b-%d&#x27;) as date, if(p.pool = &#x27;Pool 0&#x27;, &#x27;&#x27;, p.pool) as pool, time_format(g.time,&#x27;%l:%i %p&#x27;) as time,
-		location, team1_id, team2_id,  t1.country as country1, t1.number as number1,
-		t2.country as country2, t2.number as number2, t1.category,
-		t1.gender from game as g
-		join team as t1 on t1.team_id = g.team1_id
-		join team as t2 on t2.team_id = g.team2_id
-		join tournament as t0 on t0.tournament_id= g.tournament_id
-		left join pool as p on p.team_id=t1.team_id
-		join sport as sp on t0.sport=sp.sport
-		where status = &#x27;PENDING&#x27; and g.location = ${con.escape(value)} and p.tournament_id=t0.tournament_id
-		order by g.date asc, g.time asc</pre><p>game-db.js</p></div></div>
+			g.type,
+			if(current_timestamp &lt; date_add(timestamp(g.date,g.time),interval 2 hour),TRUE,FALSE) as showReport,
+			t0.tournament_id,
+			mytm.team_id
+		from sign as s
+		join game as g on s.game_id = g.game_id
+		join tournament as t0 on g.tournament_id = t0.tournament_id
+		join team as t1 on g.team1_id = t1.team_id
+		join team as t2 on g.team2_id = t2.team_id
+		join subscribe as sub on t1.team_id = sub.team_id or t2.team_id = sub.team_id
+		join lastvisits as lv using(username)
+		join team as mytm on sub.team_id=mytm.team_id
+		left join setscore as ss on g.game_id = ss.game_id
+		where sub.username = <span style="color:red">userId</span> and s.timestamp &gt; lv.scores
+		order by mytm.team_id asc, g.date desc, g.time desc;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">updateLastVisitAll(userId)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		update lastvisits
+		set scores = current_timestamp(),
+			newsfeed = current_timestamp(),
+			schedulechanges = current_timestamp()
+		where username = <span style="color:red">userId</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">updateLastVisitScores(userId)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		update lastvisits
+		set scores = current_timestamp()
+		where username = <span style="color:red">userId</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">updateLastVisitScheduleChanges(userId)</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		update lastvisits
+		set schedulechanges = current_timestamp()
+		where username = <span style="color:red">userId</span>;
+	</pre></div><div style="width:70%;padding:40px;margin:25px" class="card"><div class="card-title h5">registrantChanges()</div><div class="mb-2 text-muted card-subtitle h6">user-db.js</div><pre>
+		select * from (
+			select 
+				r.registrant_id,
+				r.mg_registrant_id as id,
+				concat(r.firstname,&#x27; &#x27;,r.lastname) as name,
+				r.country,
+				r.gender,
+				r.grade,
+				r.category_gender,
+				r.team,
+				if(r.is_registered=1,&#x27;Yes&#x27;,&#x27;No&#x27;) as registered,
+				current_timestamp() as timestamp,
+				date_format(date_add(current_timestamp(),interval -5 hour),&#x27;%a, %b-%d %l:%i %p&#x27;) as change_made,				
+				concat(u.first_name,&#x27; &#x27;,u.last_name) as updated_by,
+				9999999 as change_id
+			from registrants as r
+			join user as u on r.updated_by = u.username
+			union
+			select 
+				rcl.registrant_id,
+				r.mg_registrant_id as id,
+				concat(rcl.firstname,&#x27; &#x27;,rcl.lastname) as name,
+				rcl.country,
+				rcl.gender,
+				rcl.grade,
+				rcl.category_gender,
+				rcl.team,
+				if(rcl.is_registered=1,&#x27;Yes&#x27;,&#x27;No&#x27;) as registered,
+				timestamp,
+				date_format(date_add(timestamp,interval -5 hour),&#x27;%a, %b-%d %l:%i %p&#x27;) as change_made,
+				concat(u.first_name,&#x27; &#x27;,u.last_name) as updated_by,
+				rcl.change_id
+			from registrants_change_log as rcl
+			join registrants as r using(registrant_id)
+			left join user as u on rcl.updated_by = u.username
+		) as internal
+		where registrant_id in (select distinct registrant_id from registrants_change_log)
+		and timestamp &gt;= &#x27;2021-10-25&#x27;
+		order by registrant_id, change_id desc;
+	</pre></div></div></body></html>
